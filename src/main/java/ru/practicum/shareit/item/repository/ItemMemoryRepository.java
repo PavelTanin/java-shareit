@@ -32,22 +32,22 @@ public class ItemMemoryRepository implements ItemRepository {
     @SneakyThrows
     @Override
     public Item updateItem(Item item, Long itemId, Long userId) {
-        if(!itemStorage.containsKey(itemId)) {
+        if (!itemStorage.containsKey(itemId)) {
             log.info("Предмет отсутствует");
             throw new ObjectNotFoundException("Такой предмет отсутствует");
         }
         var updatedItem = itemStorage.get(itemId);
-        if(updatedItem.getOwner() != userId) {
+        if (updatedItem.getOwner() != userId) {
             log.info("Пользователь пытается обновить информацию о чужом предмете");
             throw new OwnerIdAndUserIdException("Обновлять информацию о предмете могут только владельцы");
         }
-        if(item.getName() != null) {
+        if (item.getName() != null) {
             updatedItem.setName(item.getName());
         }
-        if(item.getDescription() != null) {
+        if (item.getDescription() != null) {
             updatedItem.setDescription(item.getDescription());
         }
-        if(item.getAvailable() != null) {
+        if (item.getAvailable() != null) {
             updatedItem.setAvailable(item.getAvailable());
         }
         log.info("Обновлена информация о предмете id:{}", item.getId());

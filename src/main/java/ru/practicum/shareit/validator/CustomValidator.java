@@ -16,7 +16,7 @@ public class CustomValidator {
 
     @SneakyThrows
     public void isUserValid(User user) {
-        if (user.getName().isEmpty() || user.getName() == null){
+        if (user.getName().isEmpty() || user.getName() == null) {
             log.info("Поле name пустое");
             throw new UserEmptyNameException("Некорректно заполнено поле email");
         }

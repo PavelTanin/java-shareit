@@ -36,7 +36,7 @@ public class ItemServiceImpl implements ItemService {
             log.info("Пользователь не авторизован");
             throw new UserNotAuthorizedException("Неавторизованные пользователи не могут добавлять новые предметы");
         }
-        if(!userRepository.contains(userId)) {
+        if (!userRepository.contains(userId)) {
             log.info("Пользователь не зарегестрирован");
             throw new ObjectNotFoundException("Нет такого пользователя");
         }
@@ -53,7 +53,7 @@ public class ItemServiceImpl implements ItemService {
             log.info("Пользователь не авторизован");
             throw new UserNotAuthorizedException("Неавторизованные пользователи не могут добавлять новые предметы");
         }
-        if(!userRepository.contains(userId)) {
+        if (!userRepository.contains(userId)) {
             log.info("Пользователь не авторизован");
             throw new UserNotAuthorizedException("Неавторизованные пользователи не могут добавлять новые предметы");
         }
@@ -76,7 +76,7 @@ public class ItemServiceImpl implements ItemService {
             throw new UserNotAuthorizedException("Неавторизованные пользователи не могут добавлять новые предметы");
         }
         log.info("Попытка получить список всех предметов пользователя id:{}", userId);
-        if(!userRepository.contains(userId)) {
+        if (!userRepository.contains(userId)) {
             log.info("Пользователь не авторизован");
             throw new UserNotAuthorizedException("Неавторизованные пользователи не могут добавлять новые предметы");
         }

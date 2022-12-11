@@ -21,7 +21,7 @@ public class UserMemoryRepository implements UserRepository {
     @SneakyThrows
     @Override
     public User createUser(User user) {
-        if(userStorage.values().stream().anyMatch(o -> o.getEmail().equals(user.getEmail()))) {
+        if (userStorage.values().stream().anyMatch(o -> o.getEmail().equals(user.getEmail()))) {
             log.info("Пользователь с таким email существует");
             throw new UserNameDuplicateException("Пользователь с таким email уже зарегестрирован");
         }
@@ -34,19 +34,19 @@ public class UserMemoryRepository implements UserRepository {
     @SneakyThrows
     @Override
     public User updateUser(User user, Long userId) {
-        if(!userStorage.containsKey(userId)) {
+        if (!userStorage.containsKey(userId)) {
             log.info("Попытка обновить несуществующего пользователя");
             throw new ObjectNotFoundException("Такой пользователь не зарегестрирован");
         }
-        if(userStorage.values().stream().anyMatch(o -> o.getEmail().equals(user.getEmail()))) {
+        if (userStorage.values().stream().anyMatch(o -> o.getEmail().equals(user.getEmail()))) {
             log.info("Пользователь с таким email существует");
             throw new UserNameDuplicateException("Пользователь с таким email уже зарегестрирован");
         }
         var updatedUser = userStorage.get(userId);
-        if(user.getName() != null) {
+        if (user.getName() != null) {
             updatedUser.setName(user.getName());
         }
-        if(user.getEmail() != null) {
+        if (user.getEmail() != null) {
             updatedUser.setEmail(user.getEmail());
         }
         log.info("Обновлена информация о пользователе id:{}", user.getId());
@@ -56,7 +56,7 @@ public class UserMemoryRepository implements UserRepository {
     @SneakyThrows
     @Override
     public String deleteUser(Long userId) {
-        if(!userStorage.containsKey(userId)) {
+        if (!userStorage.containsKey(userId)) {
             log.info("Попытка удалить несуществующего пользователя");
             throw new ObjectNotFoundException("Такой пользователь не зарегестрирован");
         }
@@ -68,7 +68,7 @@ public class UserMemoryRepository implements UserRepository {
     @SneakyThrows
     @Override
     public User findUserById(Long userId) {
-        if(!userStorage.containsKey(userId)) {
+        if (!userStorage.containsKey(userId)) {
             log.info("Пользователь с id: не зарегестрирован", userId);
             throw new ObjectNotFoundException("Такой пользователь не зарегестрирован");
         }
