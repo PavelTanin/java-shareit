@@ -37,7 +37,7 @@ public class ItemMemoryRepository implements ItemRepository {
             throw new ObjectNotFoundException("Такой предмет отсутствует");
         }
         var updatedItem = itemStorage.get(itemId);
-        if (updatedItem.getOwner() != userId) {
+        if (!updatedItem.getOwner().equals(userId)) {
             log.info("Пользователь пытается обновить информацию о чужом предмете");
             throw new OwnerIdAndUserIdException("Обновлять информацию о предмете могут только владельцы");
         }
@@ -68,7 +68,7 @@ public class ItemMemoryRepository implements ItemRepository {
     @Override
     public List<Item> findUserAllItems(Long userId) {
         log.info("Получен список предметов пользователя id:{}", userId);
-        return itemStorage.values().stream().filter(o -> o.getOwner() == userId).collect(Collectors.toList());
+        return itemStorage.values().stream().filter(o -> o.getOwner().equals(userId)).collect(Collectors.toList());
     }
 
     @Override
