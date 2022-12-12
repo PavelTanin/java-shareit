@@ -9,9 +9,6 @@ import ru.practicum.shareit.item.service.ItemService;
 
 import java.util.List;
 
-/**
- * TODO Sprint add-controllers.
- */
 @Slf4j
 @RestController
 @RequestMapping("/items")
@@ -24,7 +21,7 @@ public class ItemController {
     @ResponseStatus(HttpStatus.OK)
     public ItemDto createItem(@RequestHeader(value = "X-Sharer-User-Id", defaultValue = "0") Long userId,
                               @RequestBody ItemDto itemDto) {
-        log.info("Получен POST-запрос /items с параметром userID:{}", userId);
+        log.info("Получен POST-запрос /items с телом {} и параметром userID:{}", itemDto, userId);
         return itemService.createItem(itemDto, userId);
     }
 
@@ -33,7 +30,7 @@ public class ItemController {
     public ItemDto updateItem(@RequestBody ItemDto itemDto,
                               @PathVariable(value = "itemId") Long id,
                               @RequestHeader(value = "X-Sharer-User-Id", defaultValue = "0") Long userId) {
-        log.info("Получен PATCH-запрос /items/{} с параметром userId:{}", id, userId);
+        log.info("Получен PATCH-запрос /items/{} с телом {} и параметром userId:{}", id, itemDto, userId);
         return itemService.updateItem(itemDto, id, userId);
     }
 

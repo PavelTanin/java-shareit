@@ -5,9 +5,6 @@ import lombok.Data;
 
 import javax.validation.constraints.*;
 
-/**
- * TODO Sprint add-controllers.
- */
 @Data
 @AllArgsConstructor
 public class User {

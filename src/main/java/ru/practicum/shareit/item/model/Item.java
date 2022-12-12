@@ -3,9 +3,6 @@ package ru.practicum.shareit.item.model;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * TODO Sprint add-controllers.
- */
 @Data
 @NoArgsConstructor
 public class Item {

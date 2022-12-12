@@ -14,6 +14,7 @@ import ru.practicum.shareit.user.repository.UserRepository;
 import ru.practicum.shareit.validator.CustomValidator;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,7 +41,7 @@ public class ItemServiceImpl implements ItemService {
             log.info("Пользователь не зарегестрирован");
             throw new ObjectNotFoundException("Нет такого пользователя");
         }
-        Item item = ItemMapper.toItem(itemDto);
+        final Item item = ItemMapper.toItem(itemDto);
         customValidator.isItemValid(item);
         return ItemMapper.toItemDto(itemRepository.createItem(item, userId));
     }
@@ -57,8 +58,7 @@ public class ItemServiceImpl implements ItemService {
             log.info("Пользователь не авторизован");
             throw new UserNotAuthorizedException("Неавторизованные пользователи не могут добавлять новые предметы");
         }
-        Item item = ItemMapper.toItem(itemDto);
-        return ItemMapper.toItemDto(itemRepository.updateItem(item, itemId, userId));
+        return ItemMapper.toItemDto(itemRepository.updateItem(ItemMapper.toItem(itemDto), itemId, userId));
     }
 
     @SneakyThrows
@@ -85,9 +85,9 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ItemDto> searchItemByNameAndDescription(String text) {
-        if (text.isEmpty() || text == null) {
+        if (text == null || text.isBlank()) {
             log.info("В поисковой строке пусто, получен пустой список предметов");
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
         log.info("Попытка получить список предметов, доступных для аренды, по запросу {}", text);
         return itemRepository.searchItemByNameAndDescription(text.toLowerCase()).stream()

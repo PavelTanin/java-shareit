@@ -23,17 +23,18 @@ public class UserServiceImp implements UserService {
 
     @SneakyThrows
     @Override
-    public UserDto createUser(User user) {
+    public UserDto createUser(UserDto userDto) {
         log.info("Попытка добавить нового пользователя");
+        final User user = UserMapper.toUser(userDto);
         customValidator.isUserValid(user);
         return UserMapper.toUserDto(userRepository.createUser(user));
     }
 
     @SneakyThrows
     @Override
-    public UserDto updateUser(User user, Long userId) {
+    public UserDto updateUser(UserDto userDto, Long userId) {
         log.info("Попытка обновить информацию о пользователе");
-        return UserMapper.toUserDto(userRepository.updateUser(user, userId));
+        return UserMapper.toUserDto(userRepository.updateUser(UserMapper.toUser(userDto), userId));
     }
 
     @SneakyThrows
