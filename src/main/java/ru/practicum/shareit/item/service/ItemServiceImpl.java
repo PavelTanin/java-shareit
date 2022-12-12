@@ -13,7 +13,6 @@ import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.user.repository.UserRepository;
 import ru.practicum.shareit.validator.CustomValidator;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
