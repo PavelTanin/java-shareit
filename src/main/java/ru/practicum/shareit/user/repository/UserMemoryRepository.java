@@ -1,10 +1,7 @@
 package ru.practicum.shareit.user.repository;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
-import ru.practicum.shareit.exception.ObjectNotFoundException;
-import ru.practicum.shareit.exception.UserNameDuplicateException;
 import ru.practicum.shareit.user.model.User;
 
 import java.util.*;
@@ -19,14 +16,8 @@ public class UserMemoryRepository implements UserRepository {
 
     private Long id = 0L;
 
-
-    @SneakyThrows
     @Override
     public User createUser(User user) {
-        if (emails.contains(user.getEmail())) {
-            log.info("Пользователь с email:{} существует", user.getEmail());
-            throw new UserNameDuplicateException("Пользователь с email:" + user.getEmail() + " уже зарегестрирован");
-        }
         user.setId(getId());
         userStorage.put(user.getId(), user);
         emails.add(user.getEmail());
@@ -34,50 +25,46 @@ public class UserMemoryRepository implements UserRepository {
         return user;
     }
 
-    @SneakyThrows
     @Override
     public User updateUser(User user, Long userId) {
-        if (!userStorage.containsKey(userId)) {
-            log.info("Попытка обновить несуществующего пользователя");
-            throw new ObjectNotFoundException("Такой пользователь не зарегестрирован");
-        }
-        if (emails.contains(user.getEmail())) {
-            log.info("Пользователь с email:{} существует", user.getEmail());
-            throw new UserNameDuplicateException("Пользователь с email:" + user.getEmail() + " уже зарегестрирован");
-        }
         var updatedUser = userStorage.get(userId);
-        if (user.getName() != null) {
-            updatedUser.setName(user.getName());
-        }
-        if (user.getEmail() != null) {
-            emails.remove(userStorage.get(userId).getEmail());
-            emails.add(user.getEmail());
-            updatedUser.setEmail(user.getEmail());
-        }
+        updatedUser.setName(user.getName());
+        emails.remove(userStorage.get(userId).getEmail());
+        emails.add(user.getEmail());
+        updatedUser.setEmail(user.getEmail());
         log.info("Обновлена информация о пользователе id:{}", user.getId());
         return updatedUser;
     }
 
-    @SneakyThrows
+    @Override
+    public User updateUserWithoutEmail(User user, Long userId) {
+        var updatedUser = userStorage.get(userId);
+        updatedUser.setName(user.getName());
+        log.info("Обновлено имя пользователя id:{}", user.getId());
+        return updatedUser;
+    }
+
+    @Override
+    public User updateUserWithoutName(User user, Long userId) {
+        var updatedUser = userStorage.get(userId);
+        emails.remove(userStorage.get(userId).getEmail());
+        emails.add(user.getEmail());
+        updatedUser.setEmail(user.getEmail());
+        log.info("Обновлен email пользователя id:{}", user.getId());
+        return updatedUser;
+    }
+
     @Override
     public String deleteUser(Long userId) {
-        if (!userStorage.containsKey(userId)) {
-            log.info("Попытка удалить несуществующего пользователя c id:{}", userId);
-            throw new ObjectNotFoundException("Пользователь c id:" + userId + " не зарегестрирован");
-        }
         log.info("Пользователь id:{} удален", userId);
         emails.remove(userStorage.get(userId).getEmail());
         userStorage.remove(userId);
         return "Пользователь " + userId + " удален";
     }
 
-    @SneakyThrows
     @Override
     public User findUserById(Long userId) {
-        if (!userStorage.containsKey(userId)) {
-            log.info("Попытка получить информацию о несуществующем пользователе c id:{}", userId);
-            throw new ObjectNotFoundException("Пользователь c id:" + userId + " не зарегестрирован");
-        }
+        log.info("Получена информаци о пользователе id:{}", userId);
         return userStorage.get(userId);
     }
 
@@ -95,5 +82,10 @@ public class UserMemoryRepository implements UserRepository {
     @Override
     public boolean contains(Long userId) {
         return userStorage.containsKey(userId);
+    }
+
+    @Override
+    public boolean emailContains(String email) {
+        return emails.contains(email);
     }
 }

@@ -1,15 +1,10 @@
 package ru.practicum.shareit.item.repository;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
-import ru.practicum.shareit.exception.ObjectNotFoundException;
-import ru.practicum.shareit.exception.OwnerIdAndUserIdException;
 import ru.practicum.shareit.item.model.Item;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -18,6 +13,8 @@ public class ItemMemoryRepository implements ItemRepository {
 
     private final Map<Long, Item> itemStorage = new HashMap<>();
 
+    private final Map<Long, Set<Long>> owners = new HashMap<>();
+
     private Long id = 0L;
 
     @Override
@@ -25,42 +22,30 @@ public class ItemMemoryRepository implements ItemRepository {
         item.setId(getId());
         item.setOwner(userId);
         itemStorage.put(item.getId(), item);
-        log.info("Добавлен новый предмет id:{}", id);
+        log.info("Пользователь id:{} добавил новый предмет id:{}", userId, item.getId());
         return item;
     }
 
-    @SneakyThrows
     @Override
-    public Item updateItem(Item item, Long itemId, Long userId) {
-        if (!itemStorage.containsKey(itemId)) {
-            log.info("Предмет отсутствует");
-            throw new ObjectNotFoundException("Такой предмет отсутствует");
-        }
-        var updatedItem = itemStorage.get(itemId);
-        if (!updatedItem.getOwner().equals(userId)) {
-            log.info("Пользователь пытается обновить информацию о чужом предмете");
-            throw new OwnerIdAndUserIdException("Обновлять информацию о предмете могут только владельцы");
-        }
-        if (item.getName() != null) {
-            updatedItem.setName(item.getName());
-        }
-        if (item.getDescription() != null) {
-            updatedItem.setDescription(item.getDescription());
-        }
-        if (item.getAvailable() != null) {
-            updatedItem.setAvailable(item.getAvailable());
-        }
-        log.info("Обновлена информация о предмете id:{}", item.getId());
-        return updatedItem;
+    public void updateName(String name, Long itemId) {
+        log.info("Изменено название предмета id:{}", itemId);
+        itemStorage.get(itemId).setName(name);
     }
 
-    @SneakyThrows
+    @Override
+    public void updateDescription(String description, Long itemId) {
+        log.info("Изменено описание предмета id:{}", itemId);
+        itemStorage.get(itemId).setDescription(description);
+    }
+
+    @Override
+    public void updateAvailable(Boolean available, Long itemId) {
+        log.info("Изменена доступность предмета id:{}", itemId);
+        itemStorage.get(itemId).setAvailable(available);
+    }
+
     @Override
     public Item findItemById(Long itemId) {
-        if (!itemStorage.containsKey(itemId)) {
-            log.info("Предмет с id:{} не найден", itemId);
-            throw new ObjectNotFoundException("Предмет не найден");
-        }
         log.info("Получена информация о предмете id:{}", itemId);
         return itemStorage.get(itemId);
     }
@@ -73,7 +58,7 @@ public class ItemMemoryRepository implements ItemRepository {
 
     @Override
     public List<Item> searchItemByNameAndDescription(String text) {
-        log.info("Получен список доступных для аренды предметов по запросу {}", text);
+        log.info("Получен список доступных для аренды предметов по ключевому слову - {}", text);
         return itemStorage.values().stream()
                 .filter(o -> o.getName().toLowerCase().contains(text) || o.getDescription().toLowerCase().contains(text))
                 .filter(o -> o.getAvailable() == true)
@@ -83,5 +68,15 @@ public class ItemMemoryRepository implements ItemRepository {
     private Long getId() {
         id++;
         return id;
+    }
+
+    @Override
+    public boolean contains(Long itemId) {
+        return itemStorage.containsKey(itemId);
+    }
+
+    @Override
+    public Long getOwnerId(Long itemId) {
+        return itemStorage.get(itemId).getOwner();
     }
 }

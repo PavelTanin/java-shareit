@@ -10,6 +10,10 @@ public interface UserRepository {
 
     User updateUser(User user, Long userId);
 
+    User updateUserWithoutEmail(User user, Long userId);
+
+    User updateUserWithoutName(User user, Long userId);
+
     String deleteUser(Long userId);
 
     User findUserById(Long userId);
@@ -17,4 +21,6 @@ public interface UserRepository {
     List<User> findAllUsers();
 
     boolean contains(Long userId);
+
+    boolean emailContains(String email);
 }
