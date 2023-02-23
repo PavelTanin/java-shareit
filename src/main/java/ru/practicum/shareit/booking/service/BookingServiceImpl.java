@@ -135,8 +135,8 @@ public class BookingServiceImpl implements BookingService {
     public List<BookingDto> findUserBookings(Long userId, String state) {
         log.info("Попытка получить информацию о всех созданных бронях пользователя userId: {}", userId);
         userExistAndAuthorizated(userId);
-        List<Booking> userBookings = bookingRepository.getBookingsByBookerOrderByStartDesc(userRepository.
-                findById(userId).get());
+        List<Booking> userBookings = bookingRepository.getBookingsByBookerOrderByStartDesc(userRepository
+                .findById(userId).get());
         if (!userBookings.isEmpty()) {
             if (state.equals("ALL")) {
                 log.info("Получена информация о всех бронированиях " +
