@@ -13,4 +13,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     @Query(value = "SELECT COUNT(*) FROM comments WHERE ITEM_ID = ?1", nativeQuery = true)
     Long isItemHaveComments(Long itemId);
 
+    @Query(value = "select author from comments where id = ?1", nativeQuery = true)
+    Long getCommentAuthorId(Long commentId);
+
 }

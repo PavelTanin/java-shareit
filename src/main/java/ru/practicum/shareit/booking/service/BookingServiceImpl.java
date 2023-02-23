@@ -48,7 +48,8 @@ public class BookingServiceImpl implements BookingService {
             log.info("Предмет {} не доступен для аренды", itemId);
             throw new ItemNotAvailableException("Данный предмет не доступен для аренды");
         }
-        if (itemRepository.findById(itemId).get().getOwner().getId().equals(userId)) {
+        if (itemRepository.getOwnerId(itemId).equals(userId)) {
+            log.info("Пользователь пытается арендовать собственную вещь");
             throw new BookingItemByOwnerException("Пользователи не могут бронироват собственные вещи");
         }
         customValidator.isBookingValid(bookingIncomeInfo);
@@ -69,7 +70,7 @@ public class BookingServiceImpl implements BookingService {
         bookingExist(bookingId);
         var itemId = bookingRepository.getReferenceById(bookingId).getItem().getId();
         userExistAndAuthorizated(userId);
-        if (itemRepository.getReferenceById(itemId).getOwner().getId().equals(userId)) {
+        if (!itemRepository.getOwnerId(itemId).equals(userId)) {
             log.info("Пользователь не является владельцем данного предмета");
             throw new ObjectNotFoundException("Пользователь не явялется владельцем данного предмета");
         }
@@ -102,7 +103,7 @@ public class BookingServiceImpl implements BookingService {
         log.info("Пользователь id: {} пытается удалить заявку на аренду " +
                 "id: {} для предмета id: {}", userId, bookingId, itemId);
         userExistAndAuthorizated(userId);
-        if (bookingRepository.getBookerId(bookingId).equals(userId)) {
+        if (!bookingRepository.getBookerId(bookingId).equals(userId)) {
             log.info("Пользователь не является автором брони");
             throw new OwnerIdAndUserIdException("Только авторы заявки на аренду могут удалять заявку");
         }

@@ -58,7 +58,7 @@ public class ItemServiceImpl implements ItemService {
         log.info("Попытка обновить информацию о предмете id: {}", itemId);
         isUserExistAndAuthorizated(userId);
         isItemExist(itemId);
-        if (itemRepository.getReferenceById(itemId).getOwner().getId().equals(userId)) {
+        if (!itemRepository.getOwnerId(itemId).equals(userId)) {
             log.info("Пользователь пытается обновить информацию о чужом предмете");
             throw new OwnerIdAndUserIdException("Обновлять информацию о предмете могут только владельцы");
         }
@@ -119,7 +119,7 @@ public class ItemServiceImpl implements ItemService {
         isUserExistAndAuthorizated(userId);
         isItemExist(itemId);
         isCommentExist(commentId);
-        if (commentRepository.getReferenceById(commentId).getAuthor().getId().equals(userId)) {
+        if (!commentRepository.getCommentAuthorId(commentId).equals(userId)) {
             log.info("Пользователь id: {} не является автором комментария id: {}", userId, commentId);
             throw new OwnerIdAndUserIdException("Только авторы комментария могут его редактировать");
         }
