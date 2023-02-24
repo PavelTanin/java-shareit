@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingIncomeInfo;
+import ru.practicum.shareit.booking.model.BookingState;
 import ru.practicum.shareit.booking.service.BookingService;
 
 import java.util.List;
@@ -55,7 +56,7 @@ public class BookingController {
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public List<BookingDto> findUserBookings(@RequestHeader(value = "X-Sharer-User-Id", defaultValue = "0") Long userId,
-                                             @RequestParam(value = "state", defaultValue = "ALL") String state) {
+                                             @RequestParam(value = "state", defaultValue = "ALL") BookingState state) {
         log.info("Получен GET-запрос /bookings?state={} с параметром userID: {}", state, userId);
         return bookingService.findUserBookings(userId, state);
     }
@@ -63,7 +64,7 @@ public class BookingController {
     @GetMapping("/owner")
     @ResponseStatus(HttpStatus.OK)
     public List<BookingDto> findOwnerBookings(@RequestHeader(value = "X-Sharer-User-Id", defaultValue = "0") Long userId,
-                                              @RequestParam(value = "state", defaultValue = "ALL") String state) {
+                                              @RequestParam(value = "state", defaultValue = "ALL") BookingState state) {
         log.info("Получен GET-запрос /bookings/owner?state={} с параметром userID: {}", state, userId);
         return bookingService.findOwnerBookings(userId, state);
     }

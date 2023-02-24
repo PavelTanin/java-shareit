@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.dto.BookingIncomeInfo;
 import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.model.BookingState;
 import ru.practicum.shareit.booking.model.Status;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.booking.dto.BookingDto;
@@ -133,57 +134,55 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @SneakyThrows
-    public List<BookingDto> findUserBookings(Long userId, String state) {
+    public List<BookingDto> findUserBookings(Long userId, BookingState state) {
         log.info("Попытка получить информацию о всех созданных бронях пользователя userId: {}", userId);
         userExistAndAuthorizated(userId);
         List<Booking> userBookings = bookingRepository.getBookingsByBookerOrderByStartDesc(userRepository
                 .findById(userId).get());
         if (!userBookings.isEmpty()) {
-            if (state.equals("ALL")) {
-                log.info("Получена информация о всех бронированиях " +
-                        "пользователя id: {}", userId);
-                return userBookings.stream()
-                        .map(BookingMapper::toBookingDto)
-                        .collect(Collectors.toList());
-            } else if (state.equals("CURRENT")) {
-                log.info("Получена информация о всех текущих " +
-                        "бронированиях пользователя id: {}", userId);
-                return userBookings.stream()
-                        .map(BookingMapper::toBookingDto)
-                        .filter(o -> o.getEnd().isAfter(LocalDateTime.now()))
-                        .filter(o -> o.getStart().isBefore(LocalDateTime.now()))
-                        .collect(Collectors.toList());
-            } else if (state.equals("PAST")) {
-                log.info("Получена информация о всех прошедших " +
-                        "бронированиях пользователя id: {}", userId);
-                return userBookings.stream()
-                        .map(BookingMapper::toBookingDto)
-                        .filter(o -> o.getEnd().isBefore(LocalDateTime.now()))
-                        .collect(Collectors.toList());
-            } else if (state.equals("FUTURE")) {
-                log.info("Получена информация о всех будущих " +
-                        "бронированиях пользователя id: {}", userId);
-                return userBookings.stream()
-                        .map(BookingMapper::toBookingDto)
-                        .filter(o -> o.getStart().isAfter(LocalDateTime.now()))
-                        .collect(Collectors.toList());
-            } else if (state.equals("WAITING")) {
-                log.info("Получена информация о всех бронированиях, " +
-                        "ожидающих решения, пользователя id: {}", userId);
-                return userBookings.stream()
-                        .map(BookingMapper::toBookingDto)
-                        .filter(o -> o.getStatus() == Status.WAITING)
-                        .collect(Collectors.toList());
-            } else if (state.equals("REJECTED")) {
-                log.info("Получена информация о всех отклоненных " +
-                        "бронированиях пользователя id: {}", userId);
-                return userBookings.stream()
-                        .map(BookingMapper::toBookingDto)
-                        .filter(o -> o.getStatus() == Status.REJECTED)
-                        .collect(Collectors.toList());
-            } else {
-                log.info("Получено некоректное значение state - {}", state);
-                throw new IncorrectStateParamException("Некорректно указан тип искомых бронирований");
+            switch (state) {
+                case CURRENT:
+                    log.info("Получена информация о всех текущих " +
+                            "бронированиях пользователя id: {}", userId);
+                    return userBookings.stream()
+                            .map(BookingMapper::toBookingDto)
+                            .filter(o -> o.getEnd().isAfter(LocalDateTime.now()))
+                            .filter(o -> o.getStart().isBefore(LocalDateTime.now()))
+                            .collect(Collectors.toList());
+                case PAST:
+                    log.info("Получена информация о всех прошедших " +
+                            "бронированиях пользователя id: {}", userId);
+                    return userBookings.stream()
+                            .map(BookingMapper::toBookingDto)
+                            .filter(o -> o.getEnd().isBefore(LocalDateTime.now()))
+                            .collect(Collectors.toList());
+                case FUTURE:
+                    log.info("Получена информация о всех будущих " +
+                            "бронированиях пользователя id: {}", userId);
+                    return userBookings.stream()
+                            .map(BookingMapper::toBookingDto)
+                            .filter(o -> o.getStart().isAfter(LocalDateTime.now()))
+                            .collect(Collectors.toList());
+                case WAITING:
+                    log.info("Получена информация о всех бронированиях, " +
+                            "ожидающих решения, пользователя id: {}", userId);
+                    return userBookings.stream()
+                            .map(BookingMapper::toBookingDto)
+                            .filter(o -> o.getStatus() == Status.WAITING)
+                            .collect(Collectors.toList());
+                case REJECTED:
+                    log.info("Получена информация о всех отклоненных " +
+                            "бронированиях пользователя id: {}", userId);
+                    return userBookings.stream()
+                            .map(BookingMapper::toBookingDto)
+                            .filter(o -> o.getStatus() == Status.REJECTED)
+                            .collect(Collectors.toList());
+                default:
+                    log.info("Получена информация о всех бронированиях " +
+                            "пользователя id: {}", userId);
+                    return userBookings.stream()
+                            .map(BookingMapper::toBookingDto)
+                            .collect(Collectors.toList());
             }
         } else {
             log.info("Нет бронирований созданных пользователем id: {}", userId);
@@ -192,56 +191,54 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @SneakyThrows
-    public List<BookingDto> findOwnerBookings(Long userId, String state) {
+    public List<BookingDto> findOwnerBookings(Long userId, BookingState state) {
         log.info("Попытка получить информацию о всех бронях для предметов пользователя userId: {}", userId);
         userExistAndAuthorizated(userId);
         List<Item> userItems = itemRepository.getItemsByOwner(userRepository.findById(userId).get());
         if (!userItems.isEmpty()) {
-            if (state.equals("ALL")) {
-                log.info("Получена информация о всех бронированиях для " +
-                        "предметов пользователя id: {}", userId);
-                return bookingRepository.getAllByItemInOrderByStartDesc(userItems).stream()
-                        .map(BookingMapper::toBookingDto)
-                        .collect(Collectors.toList());
-            } else if (state.equals("CURRENT")) {
-                log.info("Получена информация о всех текущих бронированиях " +
-                        "для предметов пользователя id: {}", userId);
-                return bookingRepository.getAllByItemInOrderByStartDesc(userItems).stream()
-                        .map(BookingMapper::toBookingDto)
-                        .filter(o -> o.getEnd().isAfter(LocalDateTime.now()))
-                        .filter(o -> o.getStart().isBefore(LocalDateTime.now()))
-                        .collect(Collectors.toList());
-            } else if (state.equals("PAST")) {
-                log.info("Получена информация о всех прошедших бронированиях " +
-                        "для предметов пользователя id: {}", userId);
-                return bookingRepository.getAllByItemInOrderByStartDesc(userItems).stream()
-                        .map(BookingMapper::toBookingDto)
-                        .filter(o -> o.getEnd().isBefore(LocalDateTime.now()))
-                        .collect(Collectors.toList());
-            } else if (state.equals("FUTURE")) {
-                log.info("Получена информация о всех будущих бронированиях " +
-                        "для предметов пользователя id: {}", userId);
-                return bookingRepository.getAllByItemInOrderByStartDesc(userItems).stream()
-                        .map(BookingMapper::toBookingDto)
-                        .filter(o -> o.getStart().isAfter(LocalDateTime.now()))
-                        .collect(Collectors.toList());
-            } else if (state.equals("WAITING")) {
-                log.info("Получена информация о всех бронированиях, ожидающих решения," +
-                        " для предметов пользователя id: {}", userId);
-                return bookingRepository.getAllByItemInOrderByStartDesc(userItems).stream()
-                        .map(BookingMapper::toBookingDto)
-                        .filter(o -> o.getStatus() == Status.WAITING)
-                        .collect(Collectors.toList());
-            } else if (state.equals("REJECTED")) {
-                log.info("Получена информация о всех отклоненных бронированиях " +
-                        "для предметов пользователя id: {}", userId);
-                return bookingRepository.getAllByItemInOrderByStartDesc(userItems).stream()
-                        .map(BookingMapper::toBookingDto)
-                        .filter(o -> o.getStatus() == Status.REJECTED)
-                        .collect(Collectors.toList());
-            } else {
-                log.info("Получено некоректное значение state - {}", state);
-                throw new IncorrectStateParamException("Некорректно указан тип искомых бронирований");
+            switch (state) {
+                case CURRENT:
+                    log.info("Получена информация о всех текущих бронированиях " +
+                            "для предметов пользователя id: {}", userId);
+                    return bookingRepository.getAllByItemInOrderByStartDesc(userItems).stream()
+                            .map(BookingMapper::toBookingDto)
+                            .filter(o -> o.getEnd().isAfter(LocalDateTime.now()))
+                            .filter(o -> o.getStart().isBefore(LocalDateTime.now()))
+                            .collect(Collectors.toList());
+                case PAST:
+                    log.info("Получена информация о всех прошедших бронированиях " +
+                            "для предметов пользователя id: {}", userId);
+                    return bookingRepository.getAllByItemInOrderByStartDesc(userItems).stream()
+                            .map(BookingMapper::toBookingDto)
+                            .filter(o -> o.getEnd().isBefore(LocalDateTime.now()))
+                            .collect(Collectors.toList());
+                case FUTURE:
+                    log.info("Получена информация о всех будущих бронированиях " +
+                            "для предметов пользователя id: {}", userId);
+                    return bookingRepository.getAllByItemInOrderByStartDesc(userItems).stream()
+                            .map(BookingMapper::toBookingDto)
+                            .filter(o -> o.getStart().isAfter(LocalDateTime.now()))
+                            .collect(Collectors.toList());
+                case WAITING:
+                    log.info("Получена информация о всех бронированиях, ожидающих решения," +
+                            " для предметов пользователя id: {}", userId);
+                    return bookingRepository.getAllByItemInOrderByStartDesc(userItems).stream()
+                            .map(BookingMapper::toBookingDto)
+                            .filter(o -> o.getStatus() == Status.WAITING)
+                            .collect(Collectors.toList());
+                case REJECTED:
+                    log.info("Получена информация о всех отклоненных бронированиях " +
+                            "для предметов пользователя id: {}", userId);
+                    return bookingRepository.getAllByItemInOrderByStartDesc(userItems).stream()
+                            .map(BookingMapper::toBookingDto)
+                            .filter(o -> o.getStatus() == Status.REJECTED)
+                            .collect(Collectors.toList());
+                default:
+                    log.info("Получена информация о всех бронированиях для " +
+                            "предметов пользователя id: {}", userId);
+                    return bookingRepository.getAllByItemInOrderByStartDesc(userItems).stream()
+                            .map(BookingMapper::toBookingDto)
+                            .collect(Collectors.toList());
             }
         } else {
             log.info("У пользователя нет созданных предметов");

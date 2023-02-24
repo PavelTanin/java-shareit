@@ -1,9 +1,11 @@
 package ru.practicum.shareit.exception;
 
+import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.ValidationException;
@@ -34,7 +36,7 @@ public class ErrorHandler {
         response.sendError(HttpStatus.NOT_FOUND.value());
     }
 
-    @ExceptionHandler(IncorrectStateParamException.class)
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleBadRequestWithMessage(HttpServletResponse response) throws IOException {
         return Map.of("error","Unknown state: UNSUPPORTED_STATUS");
