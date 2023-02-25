@@ -12,11 +12,9 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
     List<Item> findByOwner(User user);
 
     @Query(value = "select * from ITEMS where lower(NAME) ilike lower('%' || ?1 || '%')" +
-            " or lower(DESCRIPTION) ilike lower('%' || ?1 || '%')", nativeQuery = true)
+            "or lower(DESCRIPTION) ilike lower('%' || ?1 || '%')", nativeQuery = true)
     List<Item> searchByText(String text);
 
-    @Query(value = "select NAME from ITEMS where ID = ?1", nativeQuery = true)
-    String getItemName(Long itemId);
 
     @Query(value = "select AVAILABLE from ITEMS where ID = ?1", nativeQuery = true)
     Boolean isAvailable(Long itemId);
@@ -24,5 +22,6 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
     @Query(value = "select owner_id from items where id = ?1", nativeQuery = true)
     Long getOwnerId(Long itemId);
 
-    List<Item> getItemsByOwner(User user);
+    @Query(value = "SELECT ID FROM items WHERE owner_id = ?1", nativeQuery = true)
+    List<Long> getItemsIdsOfOwner(Long userId);
 }

@@ -94,7 +94,7 @@ public class ItemServiceImpl implements ItemService {
         isUserExistAndAuthorizated(userId);
         isItemExist(itemId);
         LocalDateTime createTime = LocalDateTime.now();
-        if (commentDto.getText().isEmpty() || commentDto.getText().equals(null)) {
+        if (commentDto.getText().equals(null) || commentDto.getText().isEmpty()) {
             log.info("Комментарий не содержит текст");
             throw new EmptyCommentTextException("Текст комментария не может быть пустым");
         }
