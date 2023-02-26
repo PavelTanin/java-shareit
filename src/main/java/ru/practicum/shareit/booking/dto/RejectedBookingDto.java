@@ -8,10 +8,9 @@ import ru.practicum.shareit.user.dto.UserIdDto;
 
 import java.time.LocalDateTime;
 
-
 @NoArgsConstructor
 @Data
-public class BookingDto {
+public class RejectedBookingDto extends BookingDto {
 
     private Long id;
 
@@ -25,17 +24,13 @@ public class BookingDto {
 
     private ItemBookingDto item;
 
-    public BookingDto(Long id, LocalDateTime start, LocalDateTime end, Status status, UserIdDto booker, ItemBookingDto item) {
+    public RejectedBookingDto(Long id, Status status, LocalDateTime start, LocalDateTime end,
+                              UserIdDto booker, ItemBookingDto item) {
         this.id = id;
         this.start = start;
         this.end = end;
         this.status = status;
         this.booker = booker;
         this.item = item;
-    }
-
-    public BookingDto(LocalDateTime start, LocalDateTime end) {
-        this.start = start;
-        this.end = end;
     }
 }

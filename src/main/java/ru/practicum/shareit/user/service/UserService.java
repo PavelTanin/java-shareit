@@ -10,9 +10,9 @@ public interface UserService {
 
     UserDto updateUser(UserDto userDto, Long userId);
 
-    String deleteUser(Long userId);
-
     UserDto findUserById(Long userId);
+
+    String deleteUser(Long userId);
 
     List<UserDto> findAllUsers();
 }

@@ -1,26 +1,27 @@
 package ru.practicum.shareit.item.repository;
 
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.model.User;
 
 import java.util.List;
 
-public interface ItemRepository {
+public interface ItemRepository extends JpaRepository<Item, Long> {
 
-    Item createItem(Item item, Long userId);
+    List<Item> findByOwner(User user);
 
-    void updateName(String name, Long itemId);
+    @Query(value = "select * from ITEMS where lower(NAME) ilike lower('%' || ?1 || '%')" +
+            "or lower(DESCRIPTION) ilike lower('%' || ?1 || '%')", nativeQuery = true)
+    List<Item> searchByText(String text);
 
-    void updateDescription(String description, Long itemId);
 
-    void updateAvailable(Boolean available, Long itemId);
+    @Query(value = "select AVAILABLE from ITEMS where ID = ?1", nativeQuery = true)
+    Boolean isAvailable(Long itemId);
 
-    Item findItemById(Long itemId);
-
-    List<Item> findUserAllItems(Long userId);
-
-    List<Item> searchItemByNameAndDescription(String text);
-
-    boolean contains(Long itemId);
-
+    @Query(value = "select owner_id from items where id = ?1", nativeQuery = true)
     Long getOwnerId(Long itemId);
+
+    @Query(value = "SELECT ID FROM items WHERE owner_id = ?1", nativeQuery = true)
+    List<Long> getItemsIdsOfOwner(Long userId);
 }

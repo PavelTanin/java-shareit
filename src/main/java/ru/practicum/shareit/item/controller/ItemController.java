@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.service.ItemService;
 
@@ -27,18 +28,54 @@ public class ItemController {
 
     @PatchMapping("{itemId}")
     @ResponseStatus(HttpStatus.OK)
-    public ItemDto updateItem(@RequestBody ItemDto itemDto,
-                              @PathVariable(value = "itemId") Long id,
-                              @RequestHeader(value = "X-Sharer-User-Id", defaultValue = "0") Long userId) {
-        log.info("Получен PATCH-запрос /items/{} с телом {} и параметром userId:{}", id, itemDto, userId);
-        return itemService.updateItem(itemDto, id, userId);
+    public ItemDto updateItem(@RequestHeader(value = "X-Sharer-User-Id", defaultValue = "0") Long userId,
+                              @RequestBody ItemDto itemDto,
+                              @PathVariable(value = "itemId") Long itemId) {
+        log.info("Получен PATCH-запрос /items/{} с телом {} и параметром userId:{}", itemId, itemDto, userId);
+        return itemService.updateItem(itemDto, itemId, userId);
+    }
+
+    @DeleteMapping("{itemId}")
+    @ResponseStatus(HttpStatus.OK)
+    public String deleteItem(@RequestHeader(value = "X-Sharer-User-Id", defaultValue = "0") Long userId,
+                             @PathVariable(value = "itemId") Long itemId) {
+        log.info("Получен DELETE-запрос /items/{} с параметром UserId: {}", itemId, userId);
+        return itemService.deleteItem(itemId, userId);
+    }
+
+    @PostMapping("{itemId}/comment")
+    @ResponseStatus(HttpStatus.OK)
+    public CommentDto addComment(@RequestHeader(value = "X-Sharer-User-Id", defaultValue = "0") Long userId,
+                                 @RequestBody CommentDto commentDto,
+                                 @PathVariable(value = "itemId") Long itemId) {
+        log.info("Получен POST-запрос /items/{}/comment от пользователя userId:{}", itemId, userId);
+        return itemService.addComment(commentDto, itemId, userId);
+    }
+
+    @PatchMapping("{itemId}/comment/{commentId}")
+    @ResponseStatus(HttpStatus.OK)
+    public CommentDto updateComment(@RequestHeader(value = "X-Sharer-User-Id", defaultValue = "0") Long userId,
+                                    @RequestBody CommentDto commentDto,
+                                    @PathVariable(value = "itemId") Long itemId, @PathVariable(value = "commentId") Long commentId) {
+        log.info("Получен PATCH-запрос /items/{}/comment от пользователя userId:{}", itemId, userId);
+        return itemService.updateComment(commentDto, itemId, commentId, userId);
+    }
+
+    @DeleteMapping("{itemId}/comment/{commentId}")
+    @ResponseStatus(HttpStatus.OK)
+    public String deleteComment(@RequestHeader(value = "X-Sharer-User-Id", defaultValue = "0") Long userId,
+                                @RequestBody CommentDto commentDto,
+                                @PathVariable(value = "itemId") Long itemId, @PathVariable(value = "commentId") Long commentId) {
+        log.info("Получен DELETE-запрос /items/{}/comment от пользователя userId:{}", itemId, userId);
+        return itemService.deleteComment(commentId, itemId, userId);
     }
 
     @GetMapping("{itemId}")
     @ResponseStatus(HttpStatus.OK)
-    public ItemDto findItemById(@PathVariable(value = "itemId") Long id) {
-        log.info("Получен GET-запрос /items/{}", id);
-        return itemService.findItemById(id);
+    public ItemDto findItemById(@RequestHeader(value = "X-Sharer-User-Id", defaultValue = "0") Long userId,
+                                @PathVariable(value = "itemId") Long itemId) {
+        log.info("Получен GET-запрос /items/{} от пользователя id: {}", itemId, userId);
+        return itemService.findItemById(userId, itemId);
     }
 
     @GetMapping

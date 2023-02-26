@@ -5,13 +5,13 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.ObjectNotFoundException;
-import ru.practicum.shareit.exception.UserNameDuplicateException;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.mapper.UserMapper;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 import ru.practicum.shareit.validator.CustomValidator;
 
+import javax.transaction.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,66 +24,63 @@ public class UserServiceImp implements UserService {
     private final CustomValidator customValidator;
 
     @SneakyThrows
-    @Override
+    @Transactional
     public UserDto createUser(UserDto userDto) {
         log.info("Попытка добавить нового пользователя");
-        if (userRepository.emailContains(userDto.getEmail())) {
-            log.info("Пользователь с email:{} существует", userDto.getEmail());
-            throw new UserNameDuplicateException("Пользователь с email:" + userDto.getEmail() + " уже зарегестрирован");
-        }
-        final User user = UserMapper.toUser(userDto);
-        customValidator.isUserValid(user);
-        return UserMapper.toUserDto(userRepository.createUser(user));
+        customValidator.isUserValid(userDto);
+        log.info("Добавлен новый пользователь: {}", userDto.getName());
+        return UserMapper.toUserDto(userRepository.save(UserMapper.toUser(userDto)));
     }
 
     @SneakyThrows
-    @Override
+    @Transactional
     public UserDto updateUser(UserDto userDto, Long userId) {
         log.info("Попытка обновить информацию о пользователе id:{}", userId);
-        if (!userRepository.contains(userId)) {
-            log.info("Попытка обновить несуществующего пользователя");
-            throw new ObjectNotFoundException("Такой пользователь не зарегестрирован");
+        userExist(userId);
+        User user = userRepository.getReferenceById(userId);
+        if (userDto.getName() != null) {
+            user.setName(userDto.getName());
         }
-        if (userRepository.emailContains(userDto.getEmail())) {
-            log.info("Пользователь с email:{} существует", userDto.getEmail());
-            throw new UserNameDuplicateException("Пользователь с email:" + userDto.getEmail() + " уже зарегестрирован");
+        if (userDto.getEmail() != null) {
+            user.setEmail(userDto.getEmail());
         }
-        if (userDto.getName() == null) {
-            return UserMapper.toUserDto(userRepository.updateUserWithoutName(UserMapper.toUser(userDto), userId));
-        }
-        if (userDto.getEmail() == null) {
-            return UserMapper.toUserDto(userRepository.updateUserWithoutEmail(UserMapper.toUser(userDto), userId));
-        }
-        return UserMapper.toUserDto(userRepository.updateUser(UserMapper.toUser(userDto), userId));
+        log.info("Обновлена информация о пользователе id:{}", userId);
+        return UserMapper.toUserDto(userRepository.save(user));
     }
 
     @SneakyThrows
-    @Override
+    @Transactional
     public String deleteUser(Long userId) {
         log.info("Попытка удалить пользователя");
-        if (!userRepository.contains(userId)) {
-            log.info("Попытка удалить несуществующего пользователя c id:{}", userId);
-            throw new ObjectNotFoundException("Пользователь c id:" + userId + " не зарегестрирован");
-        }
-        return userRepository.deleteUser(userId);
+        userExist(userId);
+        userRepository.deleteById(userId);
+        log.info("Пользователь {} удален", userId);
+        return "Пользователь " + userId + " удален";
     }
 
     @SneakyThrows
-    @Override
+    @Transactional
     public UserDto findUserById(Long userId) {
         log.info("Попытка получить информацию о пользователе");
-        if (!userRepository.contains(userId)) {
-            log.info("Попытка получить информацию о несуществующем пользователе c id:{}", userId);
-            throw new ObjectNotFoundException("Пользователь c id:" + userId + " не зарегестрирован");
-        }
-        return UserMapper.toUserDto(userRepository.findUserById(userId));
+        userExist(userId);
+        log.info("Получена информация о пользователе {}", userId);
+        return UserMapper.toUserDto(userRepository.getReferenceById(userId));
     }
 
-    @Override
+    @Transactional
     public List<UserDto> findAllUsers() {
         log.info("Попытка получить информацию о всех пользователях");
-        return userRepository.findAllUsers().stream()
+        return userRepository.findAll().stream()
                 .map(UserMapper::toUserDto)
                 .collect(Collectors.toList());
     }
+
+    @SneakyThrows
+    public void userExist(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            log.info("Пользователь не зарегестрирован");
+            throw new ObjectNotFoundException("Пользователь не зарегестрирован");
+        }
+    }
+
 }
