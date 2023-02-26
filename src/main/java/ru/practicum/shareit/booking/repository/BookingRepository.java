@@ -59,11 +59,11 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findRejectedOwnerBookings(List<Long> itemsIds);
 
     @Query(value = "SELECT * FROM BOOKING WHERE START_TIME >= ?1 " +
-            "AND ITEM_ID = ?2 ORDER BY START_TIME LIMIT 1", nativeQuery = true)
+            "AND ITEM_ID = ?2 AND STATUS != 'REJECTED' ORDER BY START_TIME LIMIT 1", nativeQuery = true)
     Booking getNextBooking(LocalDateTime nowTime, Long itemId);
 
     @Query(value = "SELECT * FROM BOOKING WHERE START_TIME < ?1 " +
-            "AND ITEM_ID = ?2 ORDER BY START_TIME LIMIT 1", nativeQuery = true)
+            "AND ITEM_ID = ?2 AND STATUS != 'REJECTED' ORDER BY START_TIME LIMIT 1", nativeQuery = true)
     Booking getLastBooking(LocalDateTime nowTime, Long itemId);
 
     @Query(value = "SELECT count(*) FROM BOOKING WHERE ITEM_ID = ?1 " +
