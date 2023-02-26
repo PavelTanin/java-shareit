@@ -44,8 +44,8 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public ItemDto createItem(ItemDto itemDto, Long userId) {
         log.info("Попытка добавить новый предмет");
-        isUserExistAndAuthorizated(userId);
         customValidator.isItemValid(itemDto);
+        isUserExistAndAuthorizated(userId);
         Item item = ItemMapper.toItem(itemDto);
         item.setOwner(userRepository.getReferenceById(userId));
         log.info("Пользователь id: {} добавил новый предмет id: {}", userId, itemDto);

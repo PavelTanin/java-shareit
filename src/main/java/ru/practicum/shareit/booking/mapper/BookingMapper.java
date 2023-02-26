@@ -15,7 +15,8 @@ public class BookingMapper {
     }
 
     public static RejectedBookingDto toRejectedBookingDto(Booking booking) {
-        return new RejectedBookingDto(booking.getId(), booking.getStatus(), UserMapper.userIdDto(booking.getBooker()),
+        return new RejectedBookingDto(booking.getId(), booking.getStatus(), booking.getStart(),
+                booking.getEnd(), UserMapper.userIdDto(booking.getBooker()),
                 ItemMapper.itemBookingDto(booking.getItem()));
     }
 
@@ -23,7 +24,8 @@ public class BookingMapper {
         if (booking == null) {
             return null;
         } else {
-            return new BookingForItemDto(booking.getId(), booking.getBooker().getId());
+            return new BookingForItemDto(booking.getId(), booking.getBooker().getId(), booking.getStart(),
+                    booking.getEnd());
         }
     }
 

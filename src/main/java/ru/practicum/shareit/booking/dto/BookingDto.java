@@ -16,10 +16,8 @@ public class BookingDto {
 
     private Long id;
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     private LocalDateTime start;
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     private LocalDateTime end;
 
     private Status status;
