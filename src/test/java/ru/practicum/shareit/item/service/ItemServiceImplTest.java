@@ -77,6 +77,21 @@ class ItemServiceImplTest {
     }
 
     @Test
+    void createItemWhenUserNotExistThenThrowUserNotAuthorizdException() {
+        Long userId = 0L;
+        ItemDto testItem = new ItemDto("Test", "Test", true);
+        Item item = ItemMapper.toItem(testItem);
+
+        assertThrows(UserNotAuthorizedException.class,
+                () -> itemService.createItem(testItem, userId));
+
+        verify(userRepository, never()).existsById(userId);
+        verify(userRepository, never()).getReferenceById(userId);
+        verify(itemRequestRepository, never()).getReferenceById(any());
+        verify(itemRepository, never()).save(any());
+    }
+
+    @Test
     void createItemWhenNotValidItemWhithoutRequestThenThrowItemWrongDescriptionException() {
         Long userId = 1L;
         ItemDto testItem = new ItemDto("Test", "", true);

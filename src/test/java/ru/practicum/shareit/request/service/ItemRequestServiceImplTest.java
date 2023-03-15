@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import ru.practicum.shareit.exception.EmptyRequestDescriptionException;
+import ru.practicum.shareit.exception.IncorrectIdException;
 import ru.practicum.shareit.exception.ObjectNotFoundException;
 import ru.practicum.shareit.exception.OwnerIdAndUserIdException;
 import ru.practicum.shareit.item.dto.ItemForRequestDto;
@@ -127,6 +128,23 @@ class ItemRequestServiceImplTest {
         assertThrows(OwnerIdAndUserIdException.class,
                 () -> itemRequestService.updateItemRequest(new ItemRequestDto(), userId, requestId));
 
+        verify(itemRequestRepository, never()).getReferenceById(anyLong());
+        verify(itemRequestRepository, never()).save(any());
+    }
+
+    @Test
+    void updateItemRequestWhenRequestHaveIncorrectIdThenThrowIncorrectIdException() {
+        Long userId = 1L;
+        Long requestId = 0L;
+        User user = new User();
+        user.setId(userId);
+        when(userRepository.existsById(userId)).thenReturn(true);
+
+        assertThrows(IncorrectIdException.class,
+                () -> itemRequestService.updateItemRequest(new ItemRequestDto(), userId, requestId));
+
+        verify(itemRequestRepository, never()).existsById(anyLong());
+        verify(itemRequestRepository, never()).getRequestorId(anyLong());
         verify(itemRequestRepository, never()).getReferenceById(anyLong());
         verify(itemRequestRepository, never()).save(any());
     }

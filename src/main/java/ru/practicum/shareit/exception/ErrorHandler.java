@@ -16,11 +16,6 @@ import java.util.Map;
 @RestControllerAdvice
 public class ErrorHandler {
 
-    @ExceptionHandler(UserNameDuplicateException.class)
-    public void handleConflict(HttpServletResponse response) throws IOException {
-        response.sendError(HttpStatus.CONFLICT.value());
-    }
-
     @ExceptionHandler({ValidationException.class, UserEmailValidationException.class, EmptyAvailablePoint.class,
             UserNotAuthorizedException.class, UserEmptyNameException.class,
             ItemWrongDescriptionException.class, ItemWrongNameException.class, ItemNotAvailableException.class,
@@ -31,8 +26,7 @@ public class ErrorHandler {
         response.sendError(HttpStatus.BAD_REQUEST.value());
     }
 
-    @ExceptionHandler({ObjectNotFoundException.class, OwnerIdAndUserIdException.class, NoCreatedBookingsException.class,
-                        NoCreatedItemsException.class, CrossStartOrEndTimeException.class,
+    @ExceptionHandler({ObjectNotFoundException.class, OwnerIdAndUserIdException.class,
                         BookedByOwnerException.class})
     public void handleNotFound(HttpServletResponse response) throws IOException {
         response.sendError(HttpStatus.NOT_FOUND.value());
