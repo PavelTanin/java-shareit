@@ -18,7 +18,7 @@ import java.time.temporal.ChronoUnit;
 public class CustomValidator {
 
     public void isUserValid(UserDto userDto) {
-        if (userDto.getName() == null || userDto.getName().isEmpty() ) {
+        if (userDto.getName() == null || userDto.getName().isEmpty()) {
             log.info("Поле name пустое");
             throw new UserEmptyNameException("Некорректно заполнено поле email");
         }

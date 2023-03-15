@@ -10,7 +10,6 @@ import org.springframework.data.domain.Pageable;
 import ru.practicum.shareit.exception.EmptyRequestDescriptionException;
 import ru.practicum.shareit.exception.ObjectNotFoundException;
 import ru.practicum.shareit.exception.OwnerIdAndUserIdException;
-import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemForRequestDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;

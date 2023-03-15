@@ -26,7 +26,7 @@ public class ItemMapper {
     public static ItemForRequestDto toItemForRequestDto(Item item) {
         ItemForRequestDto itemDto = new ItemForRequestDto(item.getId(), item.getName(), item.getDescription(),
                 item.getAvailable(), item.getOwner().getId());
-        if(item.getRequest() != null) {
+        if (item.getRequest() != null) {
             itemDto.setRequestId(item.getRequest().getId());
         }
         return itemDto;
