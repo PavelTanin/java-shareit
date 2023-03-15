@@ -1,8 +1,6 @@
 package ru.practicum.shareit.exception;
 
-import java.io.IOException;
-
-public class IncorrectStateParamException extends IOException {
+public class IncorrectStateParamException extends RuntimeException {
 
     public IncorrectStateParamException(String message) {
         super(message);

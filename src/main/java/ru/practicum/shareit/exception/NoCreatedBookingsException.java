@@ -1,8 +1,6 @@
 package ru.practicum.shareit.exception;
 
-import java.io.IOException;
-
-public class NoCreatedBookingsException extends IOException {
+public class NoCreatedBookingsException extends RuntimeException {
 
     public NoCreatedBookingsException(String message) {
         super(message);

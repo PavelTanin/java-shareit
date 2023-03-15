@@ -18,8 +18,8 @@ public class UserDto {
 
     private String name;
 
-
-
-
-
+    public UserDto(String email, String name) {
+        this.email = email;
+        this.name = name;
+    }
 }

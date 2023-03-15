@@ -1,8 +1,9 @@
 package ru.practicum.shareit.booking.service;
 
-import lombok.AllArgsConstructor;
-import lombok.SneakyThrows;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.dto.BookingIncomeInfo;
 import ru.practicum.shareit.booking.model.Booking;
@@ -21,7 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Service
 public class BookingServiceImpl implements BookingService {
 
@@ -33,12 +34,12 @@ public class BookingServiceImpl implements BookingService {
 
     private final CustomValidator customValidator;
 
-    @SneakyThrows
     @Transactional
     public BookingDto createBooking(BookingIncomeInfo bookingIncomeInfo, Long userId) {
-        var itemId = bookingIncomeInfo.getItemId();
         log.info("Попытка создать новую заявку на аренду");
+        customValidator.isBookingValid(bookingIncomeInfo);
         userExistAndAuthorizated(userId);
+        var itemId = bookingIncomeInfo.getItemId();
         if (!itemRepository.existsById(itemId)) {
             log.info("Предмет отсутствует");
             throw new ObjectNotFoundException("Невозможно арендовать несуществующую вещь");
@@ -49,20 +50,18 @@ public class BookingServiceImpl implements BookingService {
         }
         if (itemRepository.getOwnerId(itemId).equals(userId)) {
             log.info("Пользователь пытается арендовать собственную вещь");
-            throw new BookingItemByOwnerException("Пользователи не могут бронироват собственные вещи");
+            throw new BookedByOwnerException("Пользователи не могут бронировать собственные вещи");
         }
-        customValidator.isBookingValid(bookingIncomeInfo);
         Booking booking = new Booking();
         booking.setStart(bookingIncomeInfo.getStart());
         booking.setEnd(bookingIncomeInfo.getEnd());
         booking.setStatus(Status.WAITING);
-        booking.setBooker(userRepository.findById(userId).get());
-        booking.setItem(itemRepository.findById(itemId).get());
+        booking.setBooker(userRepository.getReferenceById(userId));
+        booking.setItem(itemRepository.getReferenceById(itemId));
         log.info("Создана заявка на бронирование id: {} от пользователя id: {}", itemId, userId);
         return BookingMapper.toBookingDto(bookingRepository.save(booking));
     }
 
-    @SneakyThrows
     @Transactional
     public BookingDto changeBookingStatus(Long bookingId, String isApproved, Long userId) {
         log.info("Попытка изменить статус заявки на аренду");
@@ -94,7 +93,6 @@ public class BookingServiceImpl implements BookingService {
 
     }
 
-    @SneakyThrows
     @Transactional
     public String deleteBooking(Long bookingId, Long userId) {
         bookingExist(bookingId);
@@ -115,7 +113,6 @@ public class BookingServiceImpl implements BookingService {
         return "Заявка на аренду успешно удалена";
     }
 
-    @SneakyThrows
     public BookingDto findById(Long bookingId, Long userId) {
         log.info("Попытка получить информацию об аренде id: {}", bookingId);
         bookingExist(bookingId);
@@ -131,87 +128,90 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    @SneakyThrows
-    public List<BookingDto> findUserBookings(Long userId, BookingState state) {
+    public List<BookingDto> findUserBookings(Long userId, BookingState state, Integer from, Integer size) {
         log.info("Попытка получить информацию о всех созданных бронях пользователя userId: {}", userId);
         userExistAndAuthorizated(userId);
+        customValidator.isPageableParamsCorrect(from, size);
+        Pageable pageRequest = PageRequest.of(from, size);
         switch (state) {
             case CURRENT:
                 log.info("Получена информация о всех текущих " +
                         "бронированиях пользователя id: {}", userId);
-                return bookingRepository.findCurrentUserBookings(userId)
+                return bookingRepository.findCurrentUserBookings(userId, pageRequest)
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
             case PAST:
                 log.info("Получена информация о всех прошедших " +
                         "бронированиях пользователя id: {}", userId);
-                return bookingRepository.findPastUserBookings(userId)
+                return bookingRepository.findPastUserBookings(userId, pageRequest)
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
             case FUTURE:
                 log.info("Получена информация о всех будущих " +
                         "бронированиях пользователя id: {}", userId);
-                return bookingRepository.findFutureUserBookings(userId)
+                return bookingRepository.findFutureUserBookings(userId, pageRequest)
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
             case WAITING:
                 log.info("Получена информация о всех бронированиях, " +
                         "ожидающих решения, пользователя id: {}", userId);
-                return bookingRepository.findWaitingUserBookings(userId)
+                return bookingRepository.findWaitingUserBookings(userId, pageRequest)
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
             case REJECTED:
                 log.info("Получена информация о всех отклоненных " +
                         "бронированиях пользователя id: {}", userId);
-                return bookingRepository.findRejectedUserBookings(userId)
+                return bookingRepository.findRejectedUserBookings(userId, pageRequest)
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
             default:
                 log.info("Получена информация о всех бронированиях " +
                         "пользователя id: {}", userId);
-                return bookingRepository.getAllUsersBookings(userId)
+                Pageable fixedPageValue = PageRequest.of((from / size), size);
+                return bookingRepository.findAllUsersBookings(userId, fixedPageValue)
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
         }
     }
 
-    @SneakyThrows
-    public List<BookingDto> findOwnerBookings(Long userId, BookingState state) {
+    public List<BookingDto> findOwnerBookings(Long userId, BookingState state, Integer from, Integer size) {
         log.info("Попытка получить информацию о всех бронях для предметов пользователя userId: {}", userId);
         userExistAndAuthorizated(userId);
+        customValidator.isPageableParamsCorrect(from, size);
+        Pageable pageRequest = PageRequest.of(from, size);
         List<Long> itemsIds = itemRepository.getItemsIdsOfOwner(userId);
         switch (state) {
             case CURRENT:
                 log.info("Получена информация о всех текущих бронированиях " +
                         "для предметов пользователя id: {}", userId);
-                return bookingRepository.findCurrentOwnerBookings(itemsIds)
+                return bookingRepository.findCurrentOwnerBookings(itemsIds, pageRequest)
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
             case PAST:
                 log.info("Получена информация о всех прошедших бронированиях " +
                         "для предметов пользователя id: {}", userId);
-                return bookingRepository.findPastOwnerBookings(itemsIds)
+                return bookingRepository.findPastOwnerBookings(itemsIds, pageRequest)
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
             case FUTURE:
                 log.info("Получена информация о всех будущих бронированиях " +
                         "для предметов пользователя id: {}", userId);
-                return bookingRepository.findFutureOwnerBookings(itemsIds)
+                return bookingRepository.findFutureOwnerBookings(itemsIds, pageRequest)
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
             case WAITING:
                 log.info("Получена информация о всех бронированиях, ожидающих решения," +
                         " для предметов пользователя id: {}", userId);
-                return bookingRepository.findWaitingOwnerBookings(itemsIds)
+                return bookingRepository.findWaitingOwnerBookings(itemsIds, pageRequest)
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .filter(o -> o.getStatus() == Status.WAITING)
@@ -219,7 +219,7 @@ public class BookingServiceImpl implements BookingService {
             case REJECTED:
                 log.info("Получена информация о всех отклоненных бронированиях " +
                         "для предметов пользователя id: {}", userId);
-                return bookingRepository.findRejectedOwnerBookings(itemsIds)
+                return bookingRepository.findRejectedOwnerBookings(itemsIds, pageRequest)
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .filter(o -> o.getStatus() == Status.REJECTED)
@@ -227,14 +227,13 @@ public class BookingServiceImpl implements BookingService {
             default:
                 log.info("Получена информация о всех бронированиях для " +
                         "предметов пользователя id: {}", userId);
-                return bookingRepository.findAllOwnerBookings(itemsIds)
+                return bookingRepository.findAllOwnerBookings(itemsIds, pageRequest)
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
         }
     }
 
-    @SneakyThrows
     private void userExistAndAuthorizated(Long userId) {
         if (userId <= 0) {
             log.info("Пользователь неавторизован");
@@ -246,10 +245,9 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    @SneakyThrows
     private void bookingExist(Long bookingId) {
         if (!bookingRepository.existsById(bookingId)) {
-            log.info("Аренда id: {} не создана");
+            log.info("Аренда id: {} не создана", bookingId);
             throw new ObjectNotFoundException("Нет аренды с таким номером");
         }
     }

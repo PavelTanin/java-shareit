@@ -1,8 +1,6 @@
 package ru.practicum.shareit.exception;
 
-import java.io.IOException;
-
-public class ItemWrongDescriptionException extends IOException {
+public class ItemWrongDescriptionException extends RuntimeException {
 
     public ItemWrongDescriptionException(String message) {
         super(message);

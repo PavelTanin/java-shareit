@@ -19,6 +19,8 @@ public class ItemDto {
 
     private BookingForItemDto nextBooking;
 
+    private Long requestId;
+
     private List<CommentDto> comments;
 
     public ItemDto(Long id, String name, String description, Boolean available) {
@@ -26,5 +28,12 @@ public class ItemDto {
         this.name = name;
         this.description = description;
         this.available = available;
+    }
+
+    public ItemDto(String name, String description, Boolean available) {
+        this.name = name;
+        this.description = description;
+        this.available = available;
+
     }
 }

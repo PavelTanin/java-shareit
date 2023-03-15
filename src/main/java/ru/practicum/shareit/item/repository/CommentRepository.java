@@ -8,9 +8,9 @@ import java.util.List;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
 
-    List<Comment> getCommentsByItem_IdOrderByIdAsc(Long itemId);
+    List<Comment> getCommentsByItemIdOrderByIdAsc(Long itemId);
 
-    @Query(value = "SELECT COUNT(*) FROM comments WHERE ITEM_ID = ?1", nativeQuery = true)
+    @Query(value = "SELECT COUNT(*) FROM comments WHERE ITEM_ID = ?1 LIMIT 1", nativeQuery = true)
     Long isItemHaveComments(Long itemId);
 
     @Query(value = "select author from comments where id = ?1", nativeQuery = true)

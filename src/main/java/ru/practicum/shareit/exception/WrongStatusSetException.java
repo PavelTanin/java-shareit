@@ -1,8 +1,6 @@
 package ru.practicum.shareit.exception;
 
-import java.io.IOException;
-
-public class WrongStatusSetException extends IOException {
+public class WrongStatusSetException extends RuntimeException {
 
     public WrongStatusSetException(String message) {
         super(message);

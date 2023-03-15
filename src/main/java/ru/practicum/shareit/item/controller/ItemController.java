@@ -64,7 +64,6 @@ public class ItemController {
     @DeleteMapping("{itemId}/comment/{commentId}")
     @ResponseStatus(HttpStatus.OK)
     public String deleteComment(@RequestHeader(value = "X-Sharer-User-Id", defaultValue = "0") Long userId,
-                                @RequestBody CommentDto commentDto,
                                 @PathVariable(value = "itemId") Long itemId, @PathVariable(value = "commentId") Long commentId) {
         log.info("Получен DELETE-запрос /items/{}/comment от пользователя userId:{}", itemId, userId);
         return itemService.deleteComment(commentId, itemId, userId);
@@ -80,16 +79,20 @@ public class ItemController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<ItemDto> findUserAllItems(@RequestHeader(value = "X-Sharer-User-Id", defaultValue = "0") Long userId) {
-        log.info("Получен GET-запрос с параметром userId:{}", userId);
-        return itemService.findUserAllItems(userId);
+    public List<ItemDto> findUserAllItems(@RequestHeader(value = "X-Sharer-User-Id", defaultValue = "0") Long userId,
+                                          @RequestParam(value = "from", defaultValue = "0") Integer from,
+                                          @RequestParam(value = "size", defaultValue = "10") Integer size) {
+        log.info("Получен GET-запрос /items?from={}&size={} с параметром userId:{}", from, size, userId);
+        return itemService.findUserAllItems(userId, from, size);
     }
 
     @GetMapping("/search")
     @ResponseStatus(HttpStatus.OK)
-    public List<ItemDto> searchItemByNameAndDescription(@RequestParam(value = "text") String text) {
-        log.info("Получен GET-запрос с параметром text: {}", text);
-        return itemService.searchItemByNameAndDescription(text);
+    public List<ItemDto> searchItemByNameAndDescription(@RequestParam(value = "text") String text,
+                                                        @RequestParam(value = "from", defaultValue = "0") Integer from,
+                                                        @RequestParam(value = "size", defaultValue = "10") Integer size) {
+        log.info("Получен GET-запрос /items/search?from={}&size={} с параметром text: {}", from, size, text);
+        return itemService.searchItemByNameAndDescription(text, from, size);
     }
 
 

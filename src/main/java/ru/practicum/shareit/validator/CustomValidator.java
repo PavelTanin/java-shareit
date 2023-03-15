@@ -1,11 +1,12 @@
 package ru.practicum.shareit.validator;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.booking.dto.BookingIncomeInfo;
 import ru.practicum.shareit.exception.*;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import java.time.LocalDateTime;
@@ -16,9 +17,8 @@ import java.time.temporal.ChronoUnit;
 @Component
 public class CustomValidator {
 
-    @SneakyThrows
     public void isUserValid(UserDto userDto) {
-        if (userDto.getName().isEmpty() || userDto.getName() == null) {
+        if (userDto.getName() == null || userDto.getName().isEmpty() ) {
             log.info("Поле name пустое");
             throw new UserEmptyNameException("Некорректно заполнено поле email");
         }
@@ -28,7 +28,6 @@ public class CustomValidator {
         }
     }
 
-    @SneakyThrows
     public void isItemValid(ItemDto itemDto) {
         if (itemDto.getName() == null || itemDto.getName().isEmpty()) {
             log.info("Некоректно заполнено название");
@@ -36,7 +35,7 @@ public class CustomValidator {
         }
         if (itemDto.getDescription() == null || itemDto.getDescription().isEmpty()) {
             log.info("Некоректно заполнено описание");
-            throw new ItemWrongNameException("Описание не может быть пустыми");
+            throw new ItemWrongDescriptionException("Описание не может быть пустыми");
         }
         if (itemDto.getAvailable() == null) {
             log.info("Не указана доступность предмета");
@@ -44,23 +43,52 @@ public class CustomValidator {
         }
     }
 
-    @SneakyThrows
     public void isBookingValid(BookingIncomeInfo bookingIncomeInfo) {
-        if (bookingIncomeInfo.getStart().truncatedTo(ChronoUnit.SECONDS)
+        if (bookingIncomeInfo.getItemId() == null) {
+            log.info("Некорректно указан id предмета");
+            throw new IncorrectItemValueException("Некорректно указан id предмета");
+        }
+        if (bookingIncomeInfo.getStart() == null || bookingIncomeInfo.getStart().truncatedTo(ChronoUnit.SECONDS)
                 .isBefore(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS))) {
             log.info("Время начала аренды раньше текущего времени");
             throw new IncorrectBookingTimeException("Время начала аренды не может быть раньше текущего времени");
         }
-        if (bookingIncomeInfo.getEnd().truncatedTo(ChronoUnit.SECONDS)
+        if (bookingIncomeInfo.getEnd() == null || bookingIncomeInfo.getEnd().truncatedTo(ChronoUnit.SECONDS)
                 .isBefore(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS))) {
             log.info("Время окончания аренды раньше текущего времени");
             throw new IncorrectBookingTimeException("Время окончания аренды не может быть раньше текущего времени");
         }
-        if (bookingIncomeInfo.getEnd().truncatedTo(ChronoUnit.SECONDS)
+        if (bookingIncomeInfo.getStart().equals(bookingIncomeInfo.getEnd()) ||
+                bookingIncomeInfo.getEnd().truncatedTo(ChronoUnit.SECONDS)
                 .isBefore(bookingIncomeInfo.getStart().truncatedTo(ChronoUnit.SECONDS))) {
             log.info("Время окончания аренды раньше времени начала аренды");
             throw new IncorrectBookingTimeException("Дата окончания аренды не может быть раньше времени ее начала");
         }
 
+    }
+
+    public void isRequestValid(ItemRequestDto itemRequestDto) {
+        if (itemRequestDto.getDescription() == null || itemRequestDto.getDescription().isEmpty()) {
+            log.info("Попытка создать запрос на вещь с пустым описанием");
+            throw new EmptyRequestDescriptionException("Описание не может быть пустым");
+        }
+    }
+
+    public void isPageableParamsCorrect(Integer from, Integer size) {
+        if (from < 0) {
+            log.info("Получено отрицательное значение from: {}", from);
+            throw new IncorrectRequestParamsException("Такой страницы не существует");
+        }
+        if (size <= 0) {
+            log.info("Получено некорректное значение size: {}", size);
+            throw new IncorrectRequestParamsException("Невозможно отразить на странице отрицательное количество записей");
+        }
+    }
+
+    public void isCommentValid(CommentDto commentDto) {
+        if (commentDto.getText() == null || commentDto.getText().isEmpty()) {
+            log.info("Комментарий не содержит текст");
+            throw new EmptyCommentTextException("Текст комментария не может быть пустым");
+        }
     }
 }

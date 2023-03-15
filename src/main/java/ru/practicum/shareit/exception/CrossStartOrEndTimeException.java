@@ -1,8 +1,6 @@
 package ru.practicum.shareit.exception;
 
-import java.io.IOException;
-
-public class CrossStartOrEndTimeException extends IOException {
+public class CrossStartOrEndTimeException extends RuntimeException {
 
     public CrossStartOrEndTimeException(String message) {
         super(message);

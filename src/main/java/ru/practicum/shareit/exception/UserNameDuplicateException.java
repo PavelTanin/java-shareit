@@ -1,8 +1,6 @@
 package ru.practicum.shareit.exception;
 
-import java.io.IOException;
-
-public class UserNameDuplicateException extends IOException {
+public class UserNameDuplicateException extends RuntimeException {
 
     public UserNameDuplicateException(String message) {
         super(message);

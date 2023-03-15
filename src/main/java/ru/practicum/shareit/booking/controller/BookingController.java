@@ -1,6 +1,6 @@
 package ru.practicum.shareit.booking.controller;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +14,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/bookings")
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class BookingController {
 
     private final BookingService bookingService;
@@ -56,17 +56,23 @@ public class BookingController {
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public List<BookingDto> findUserBookings(@RequestHeader(value = "X-Sharer-User-Id", defaultValue = "0") Long userId,
-                                             @RequestParam(value = "state", defaultValue = "ALL") BookingState state) {
-        log.info("Получен GET-запрос /bookings?state={} с параметром userID: {}", state, userId);
-        return bookingService.findUserBookings(userId, state);
+                                             @RequestParam(value = "state", defaultValue = "ALL") BookingState state,
+                                             @RequestParam(value = "from", defaultValue = "0") Integer from,
+                                             @RequestParam(value = "size", defaultValue = "10") Integer size) {
+        log.info("Получен GET-запрос /bookings?state={}&from={}&size={} с параметром userID: {}", state, from,
+                size, userId);
+        return bookingService.findUserBookings(userId, state, from, size);
     }
 
     @GetMapping("/owner")
     @ResponseStatus(HttpStatus.OK)
     public List<BookingDto> findOwnerBookings(@RequestHeader(value = "X-Sharer-User-Id", defaultValue = "0") Long userId,
-                                              @RequestParam(value = "state", defaultValue = "ALL") BookingState state) {
-        log.info("Получен GET-запрос /bookings/owner?state={} с параметром userID: {}", state, userId);
-        return bookingService.findOwnerBookings(userId, state);
+                                              @RequestParam(value = "state", defaultValue = "ALL") BookingState state,
+                                              @RequestParam(value = "from", defaultValue = "0") Integer from,
+                                              @RequestParam(value = "size", defaultValue = "10") Integer size) {
+        log.info("Получен GET-запрос /bookings/owner?state={}&from={}&size={} с параметром userID: {}", state,
+                from, size, userId);
+        return bookingService.findOwnerBookings(userId, state, from, size);
     }
 
 }
