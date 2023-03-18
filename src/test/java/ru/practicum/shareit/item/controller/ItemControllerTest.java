@@ -36,6 +36,7 @@ class ItemControllerTest {
     @SneakyThrows
     @Test
     void createItem() {
+        Long userId = 1L;
         ItemDto requestItem = new ItemDto();
         requestItem.setName("Test");
         requestItem.setDescription("Test");
@@ -45,6 +46,7 @@ class ItemControllerTest {
 
 
         String result = mockMvc.perform(post("/items")
+                        .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(responseItem)))
                 .andExpect(status().isOk())
@@ -58,6 +60,7 @@ class ItemControllerTest {
     @SneakyThrows
     @Test
     void updateItem() {
+        Long userId = 1L;
         Long itemId = 1L;
         ItemDto requestItem = new ItemDto();
         requestItem.setId(itemId);
@@ -70,6 +73,7 @@ class ItemControllerTest {
 
 
         String result = mockMvc.perform(patch("/items/{itemId}", itemId)
+                        .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(responseItem)))
                 .andExpect(status().isOk())
@@ -89,6 +93,7 @@ class ItemControllerTest {
         when(itemService.deleteItem(anyLong(), anyLong())).thenReturn("Предмет удален");
 
         String result = mockMvc.perform(delete("/items/{itemId}", itemId)
+                        .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(expectedResult)))
                 .andExpect(status().isOk())
@@ -103,6 +108,7 @@ class ItemControllerTest {
     @SneakyThrows
     @Test
     void addComment() {
+        Long userId = 1L;
         Long itemId = 1L;
         CommentDto requestDto = new CommentDto();
         requestDto.setText("Test");
@@ -110,6 +116,7 @@ class ItemControllerTest {
         when(itemService.addComment(any(), anyLong(), anyLong())).thenReturn(responseDto);
 
         String result = mockMvc.perform(post("/items/{itemId}/comment", itemId)
+                        .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(responseDto)))
                 .andExpect(status().isOk())
@@ -124,6 +131,7 @@ class ItemControllerTest {
     @SneakyThrows
     @Test
     void updateComment() {
+        Long userId = 1L;
         Long itemId = 1L;
         Long commentId = 1L;
         LocalDateTime created = LocalDateTime.now();
@@ -131,6 +139,7 @@ class ItemControllerTest {
         when(itemService.updateComment(any(), anyLong(), anyLong(), anyLong())).thenReturn(responseDto);
 
         String result = mockMvc.perform(patch("/items/{itemId}/comment/{commentId}", itemId, commentId)
+                        .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(responseDto)))
                 .andExpect(status().isOk())
@@ -152,6 +161,7 @@ class ItemControllerTest {
         when(itemService.deleteComment(anyLong(), anyLong(), anyLong())).thenReturn(expectedResult);
 
         String result = mockMvc.perform(delete("/items/{itemId}/comment/{commentId}", itemId, commentId)
+                        .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(expectedResult)))
                 .andExpect(status().isOk())
@@ -172,6 +182,7 @@ class ItemControllerTest {
 
 
         String result = mockMvc.perform(get("/items/{itemId}", itemId)
+                        .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(expectedResult)))
                 .andExpect(status().isOk())
@@ -194,6 +205,7 @@ class ItemControllerTest {
         when(itemService.findUserAllItems(anyLong(), anyInt(), anyInt())).thenReturn(expectedResult);
 
         String result = mockMvc.perform(get("/items")
+                        .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(expectedResult)))
                 .andExpect(status().isOk())
@@ -207,12 +219,14 @@ class ItemControllerTest {
     @SneakyThrows
     @Test
     void searchItemByNameAndDescription() {
+        Long userId = 1L;
         ItemDto responseDto1 = new ItemDto(1L, "Test", "Test", true);
         ItemDto responseDto2 = new ItemDto(2L, "Test2", "Test2", false);
         List<ItemDto> expectedResult = List.of(responseDto1, responseDto2);
         when(itemService.searchItemByNameAndDescription(any(), anyInt(), anyInt())).thenReturn(List.of(responseDto1, responseDto2));
 
         String result = mockMvc.perform(get("/items/search?text=")
+                        .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(expectedResult)))
                 .andExpect(status().isOk())

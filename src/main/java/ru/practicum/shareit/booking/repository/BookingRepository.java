@@ -4,6 +4,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.model.Status;
+import ru.practicum.shareit.item.model.Item;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -70,6 +72,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query(value = "SELECT count(*) FROM BOOKING WHERE ITEM_ID = ?1 " +
             "AND BOOKER_ID = ?2 AND START_TIME <= ?3", nativeQuery = true)
     Long bookingsBeforeNowCount(Long itemId, Long userId, LocalDateTime nowTime);
+
+    List<Booking> findAllByItemInAndStatusIsOrderByIdAsc(List<Item> items, Status status);
 
 
 }

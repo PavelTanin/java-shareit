@@ -30,6 +30,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -61,50 +62,54 @@ class ItemServiceImplTest {
     @Test
     void createItemWhenValidItemWhithoutRequestThenSaveItem() {
         Long userId = 1L;
+        User user = new User(1L, "test@test.ru", "Test");
         ItemDto testItem = new ItemDto("Test", "Test", true);
+        ItemDto expectedItem = new ItemDto(1L, "Test", "Test", true);
+        expectedItem.setComments(Collections.emptyList());
         Item item = ItemMapper.toItem(testItem);
-        when(itemRepository.save(item)).thenReturn(item);
-        when(userRepository.existsById(userId)).thenReturn(true);
+        item.setId(1L);
+        item.setOwner(user);
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
+        when(itemRepository.save(any())).thenReturn(item);
+
 
         ItemDto result = itemService.createItem(testItem, userId);
 
         verify(customValidator, times(1)).isItemValid(testItem);
-        verify(userRepository, times(1)).existsById(userId);
-        verify(userRepository, times(1)).getReferenceById(userId);
         verify(itemRequestRepository, never()).getReferenceById(any());
-        assertEquals(testItem, result);
+        assertEquals(expectedItem, result);
 
     }
 
     @Test
     void createItemWhenUserNotExistThenThrowUserNotAuthorizdException() {
-        Long userId = 0L;
+        Long userId = 1L;
         ItemDto testItem = new ItemDto("Test", "Test", true);
-        Item item = ItemMapper.toItem(testItem);
+        when(userRepository.findById(anyLong())).thenReturn(Optional.ofNullable(null));
 
-        assertThrows(UserNotAuthorizedException.class,
+
+        assertThrows(ObjectNotFoundException.class,
                 () -> itemService.createItem(testItem, userId));
 
-        verify(userRepository, never()).existsById(userId);
-        verify(userRepository, never()).getReferenceById(userId);
+        verify(customValidator, times(1)).isItemValid(testItem);
         verify(itemRequestRepository, never()).getReferenceById(any());
         verify(itemRepository, never()).save(any());
+
     }
 
     @Test
     void createItemWhenNotValidItemWhithoutRequestThenThrowItemWrongDescriptionException() {
         Long userId = 1L;
         ItemDto testItem = new ItemDto("Test", "", true);
-        Item item = ItemMapper.toItem(testItem);
         doThrow(ItemWrongDescriptionException.class).when(customValidator).isItemValid(testItem);
 
         assertThrows(ItemWrongDescriptionException.class, () -> itemService.createItem(testItem, userId));
 
-        verify(itemRepository, never()).save(item);
+        verify(itemRepository, never()).save(any());
     }
 
     @Test
-    void createItemWhenValidItemWhithRequestThenSaveItem() {
+    void createItemWhenValidItemWithRequestThenSaveItem() {
         Long userId = 1L;
         Long itemRequestId = 0L;
         ItemDto testItem = new ItemDto("Test", "Test", true);
@@ -112,35 +117,39 @@ class ItemServiceImplTest {
         testItem.setRequestId(0L);
         Item item = ItemMapper.toItem(testItem);
         item.setRequest(itemRequest);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRequestRepository.getReferenceById(itemRequestId)).thenReturn(itemRequest);
-        when(itemRepository.save(item)).thenReturn(item);
+        testItem.setComments(Collections.emptyList());
+        User user = new User(userId, "test@test.ru", "Test");
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
+        when(itemRequestRepository.getReferenceById(anyLong())).thenReturn(itemRequest);
+        when(itemRepository.save(any())).thenReturn(item);
 
 
         ItemDto result = itemService.createItem(testItem, userId);
 
         verify(customValidator, times(1)).isItemValid(testItem);
-        verify(userRepository, times(1)).existsById(userId);
-        verify(userRepository, times(1)).getReferenceById(userId);
         verify(itemRequestRepository, times(1)).getReferenceById(any());
         assertEquals(testItem, result);
 
     }
 
     @Test
-    void updateItemWhenItemExistThenUpadetItem() {
+    void updateItemWhenItemExistThenUpdateItem() {
         Long itemId = 1L;
         Long userId = 1L;
+        User user = new User();
+        user.setId(userId);
         ItemDto testItem = new ItemDto("Test", "Test", true);
         ItemDto newItemDto = new ItemDto(itemId, "Renamed", "Renamed", false);
         Item oldItem = ItemMapper.toItem(testItem);
         Item newItem = ItemMapper.toItem(newItemDto);
         oldItem.setId(itemId);
+        oldItem.setOwner(user);
         newItem.setId(itemId);
-        when(itemRepository.getOwnerId(itemId)).thenReturn(1L);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRepository.existsById(itemId)).thenReturn(true);
-        when(itemRepository.getReferenceById(itemId)).thenReturn(oldItem);
+        newItem.setOwner(user);
+        newItemDto.setComments(Collections.emptyList());
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(itemRepository.getOwnerId(anyLong())).thenReturn(1L);
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(oldItem));
         when(itemRepository.save(newItem)).thenReturn(newItem);
 
         ItemDto result = itemService.updateItem(newItemDto, itemId, userId);
@@ -155,40 +164,41 @@ class ItemServiceImplTest {
         ItemDto testItem = new ItemDto(itemId, "Test", "", true);
         Item item = ItemMapper.toItem(testItem);
         when(userRepository.existsById(userId)).thenReturn(true);
-        doThrow(ObjectNotFoundException.class).when(itemRepository).existsById(itemId);
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.ofNullable(null));
 
         assertThrows(ObjectNotFoundException.class,
                 () -> itemService.updateItem(testItem, itemId, userId));
 
-        verify(itemRepository, never()).save(item);
         verify(itemRepository, never()).getOwnerId(itemId);
-        verify(itemRepository, never()).getReferenceById(itemId);
+        verify(itemRepository, never()).save(item);
     }
 
     @Test
     void updateItemWhenUserNotOwnerThenThrowOwnerException() {
         Long userId = 1L;
         Long itemId = 1L;
-        ItemDto testItem = new ItemDto(itemId, "Test", "", true);
+        User user = new User();
+        user.setId(userId);
+        ItemDto testItem = new ItemDto(itemId, "Test", "Test", true);
         Item item = ItemMapper.toItem(testItem);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRepository.existsById(itemId)).thenReturn(true);
-        when(itemRepository.getOwnerId(itemId)).thenReturn(2L);
+        item.setOwner(user);
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(item));
+        when(itemRepository.getOwnerId(anyLong())).thenReturn(2L);
 
         assertThrows(OwnerIdAndUserIdException.class,
                 () -> itemService.updateItem(testItem, itemId, userId));
 
         verify(itemRepository, never()).save(item);
-        verify(itemRepository, never()).getReferenceById(itemId);
     }
 
     @Test
     void deleteItemWhenItemExistThenDeleteItem() {
         Long userId = 1L;
         Long itemId = 1L;
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRepository.existsById(userId)).thenReturn(true);
-        when(itemRepository.getOwnerId(itemId)).thenReturn(1L);
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(itemRepository.existsById(anyLong())).thenReturn(true);
+        when(itemRepository.getOwnerId(anyLong())).thenReturn(1L);
 
         String result = itemService.deleteItem(itemId, userId);
 
@@ -224,6 +234,11 @@ class ItemServiceImplTest {
         Long userId = 1L;
         Long itemId = 1L;
         LocalDateTime created = LocalDateTime.now();
+        User user = new User();
+        user.setId(userId);
+        Item item = new Item();
+        item.setId(itemId);
+        item.setOwner(user);
         Comment comment = Comment.builder()
                 .author(new User())
                 .item(new Item())
@@ -231,11 +246,9 @@ class ItemServiceImplTest {
                 .created(created)
                 .build();
         CommentDto commentDto = CommentMapper.toCommentDto(comment);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRepository.existsById(itemId)).thenReturn(true);
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(item));
         when(bookingRepository.bookingsBeforeNowCount(anyLong(), anyLong(), any())).thenReturn(1L);
-        when(userRepository.getReferenceById(userId)).thenReturn(new User());
-        when(itemRepository.getReferenceById(itemId)).thenReturn(new Item());
         when(commentRepository.save(any())).thenReturn(comment);
 
         CommentDto result = itemService.addComment(commentDto, itemId, userId);
@@ -249,9 +262,14 @@ class ItemServiceImplTest {
     void addCommentWhenCommentNotValidThenThrowEmptyCommentException() {
         Long userId = 1L;
         Long itemId = 1L;
+        User user = new User();
+        user.setId(userId);
+        Item item = new Item();
+        item.setId(itemId);
+        item.setOwner(user);
         CommentDto commentDto = new CommentDto();
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRepository.existsById(itemId)).thenReturn(true);
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(item));
         doThrow(EmptyCommentTextException.class).when(customValidator).isCommentValid(commentDto);
 
         assertThrows(EmptyCommentTextException.class,
@@ -265,10 +283,16 @@ class ItemServiceImplTest {
     void addCommentWhenNoBookingYetThenThrowNoBookingYetException() {
         Long userId = 1L;
         Long itemId = 1L;
+        User user = new User();
+        user.setId(userId);
+        Item item = new Item();
+        item.setId(itemId);
+        item.setOwner(user);
         CommentDto commentDto = new CommentDto();
         commentDto.setText("Test");
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRepository.existsById(itemId)).thenReturn(true);
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(item));
+        when(bookingRepository.bookingsBeforeNowCount(anyLong(), anyLong(), any())).thenReturn(0L);
 
 
         assertThrows(NoBookedYetException.class, () -> itemService.addComment(commentDto, itemId, userId));
@@ -281,6 +305,11 @@ class ItemServiceImplTest {
         Long userId = 1L;
         Long itemId = 1L;
         Long commentId = 1L;
+        User user = new User();
+        user.setId(userId);
+        Item item = new Item();
+        item.setId(itemId);
+        item.setOwner(user);
         LocalDateTime created = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
         Comment comment = Comment.builder()
                 .author(new User())
@@ -288,15 +317,13 @@ class ItemServiceImplTest {
                 .text("Test")
                 .created(created)
                 .build();
-        CommentDto commentDto = CommentMapper.toCommentDto(comment);
         comment.setText("Test2");
         CommentDto newComment = CommentMapper.toCommentDto(comment);
         when(userRepository.existsById(userId)).thenReturn(true);
         when(itemRepository.existsById(itemId)).thenReturn(true);
-        when(commentRepository.existsById(commentId)).thenReturn(true);
-        when(commentRepository.getCommentAuthorId(commentId)).thenReturn(1L);
-        when(commentRepository.getReferenceById(commentId)).thenReturn(comment);
-        when(commentRepository.save(comment)).thenReturn(comment);
+        when(commentRepository.findById(anyLong())).thenReturn(Optional.of(comment));
+        when(commentRepository.getCommentAuthorId(anyLong())).thenReturn(1L);
+        when(commentRepository.save(any())).thenReturn(comment);
 
         CommentDto result = itemService.updateComment(newComment, itemId, commentId, userId);
 
@@ -308,17 +335,24 @@ class ItemServiceImplTest {
         Long userId = 1L;
         Long itemId = 1L;
         Long commentId = 1L;
-        CommentDto commentDto = new CommentDto();
+        User user = new User();
+        user.setId(userId);
+        Item item = new Item();
+        item.setId(itemId);
+        item.setOwner(user);
+        Comment comment = new Comment();
+        comment.setId(commentId);
+        comment.setAuthor(user);
+        comment.setItem(item);
+        CommentDto commentDto = CommentMapper.toCommentDto(comment);
         when(userRepository.existsById(userId)).thenReturn(true);
         when(itemRepository.existsById(itemId)).thenReturn(true);
-        when(commentRepository.existsById(commentId)).thenReturn(true);
-        doThrow(OwnerIdAndUserIdException.class).when(commentRepository)
-                .getCommentAuthorId(commentId);
+        when(commentRepository.findById(anyLong())).thenReturn(Optional.of(comment));
+        when(commentRepository.getCommentAuthorId(anyLong())).thenReturn(2L);
 
         assertThrows(OwnerIdAndUserIdException.class,
                 () -> itemService.updateComment(commentDto, itemId, commentId, userId));
 
-        verify(commentRepository, never()).getReferenceById(commentId);
         verify(commentRepository, never()).save(any());
     }
 
@@ -330,13 +364,12 @@ class ItemServiceImplTest {
         CommentDto commentDto = new CommentDto();
         when(userRepository.existsById(userId)).thenReturn(true);
         when(itemRepository.existsById(itemId)).thenReturn(true);
-        doThrow(ObjectNotFoundException.class).when(commentRepository).existsById(commentId);
+        when(commentRepository.findById(anyLong())).thenReturn(Optional.ofNullable(null));
 
         assertThrows(ObjectNotFoundException.class,
                 () -> itemService.updateComment(commentDto, itemId, commentId, userId));
 
         verify(commentRepository, never()).getCommentAuthorId(commentId);
-        verify(commentRepository, never()).getReferenceById(commentId);
         verify(commentRepository, never()).save(any());
     }
 
@@ -345,9 +378,14 @@ class ItemServiceImplTest {
         Long userId = 1L;
         Long itemId = 1L;
         Long commentId = 1L;
+        User user = new User();
+        user.setId(userId);
+        Item item = new Item();
+        item.setId(itemId);
+        item.setOwner(user);
         when(userRepository.existsById(userId)).thenReturn(true);
         when(itemRepository.existsById(itemId)).thenReturn(true);
-        when(commentRepository.existsById(commentId)).thenReturn(true);
+        when(commentRepository.existsById(anyLong())).thenReturn(true);
         when(commentRepository.getCommentAuthorId(commentId)).thenReturn(1L);
 
         String result = itemService.deleteComment(commentId, itemId, userId);
@@ -360,18 +398,15 @@ class ItemServiceImplTest {
     void findItemByIdWithoutBookingsAndCommentsThenGetIt() {
         Long userId = 1L;
         Long itemId = 1L;
-        ItemDto itemDto = new ItemDto();
-        Item item = ItemMapper.toItem(itemDto);
-        itemDto.setId(itemId);
-        itemDto.setComments(Collections.emptyList());
         User user = new User();
-        user.setId(2L);
-        item.setOwner(user);
+        user.setId(userId);
+        Item item = new Item();
         item.setId(itemId);
+        item.setOwner(user);
+        item.setComments(Collections.emptyList());
+        ItemDto itemDto = ItemMapper.toItemDto(item);
         when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRepository.existsById(itemId)).thenReturn(true);
-        when(commentRepository.isItemHaveComments(itemId)).thenReturn(0L);
-        when(itemRepository.getReferenceById(itemId)).thenReturn(item);
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(item));
 
         ItemDto result = itemService.findItemById(userId, itemId);
 
@@ -396,24 +431,24 @@ class ItemServiceImplTest {
                 .text("Test")
                 .author(new User())
                 .item(item)
-                .created(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES))
+                .created(LocalDateTime.now())
                 .build();
         CommentDto commentDto = CommentMapper.toCommentDto(comment);
         itemDto.setId(itemId);
         itemDto.setComments(List.of(commentDto));
         Booking booking1 = new Booking(1L, LocalDateTime.now(), LocalDateTime.now(), Status.APPROVED,
                 user2, item);
-        Booking booking2 = new Booking(2L, LocalDateTime.now(), LocalDateTime.now(), Status.APPROVED,
+        Booking booking2 = new Booking(2L, LocalDateTime.now().plusDays(1),
+                LocalDateTime.now().plusDays(3), Status.APPROVED,
                 user2, item);
-        itemDto.setNextBooking(BookingMapper.toBookingForItemDto(booking1));
-        itemDto.setLastBooking(BookingMapper.toBookingForItemDto(booking2));
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRepository.existsById(itemId)).thenReturn(true);
-        when(itemRepository.getReferenceById(itemId)).thenReturn(item);
-        when(commentRepository.isItemHaveComments(itemId)).thenReturn(1L);
-        when(commentRepository.getCommentsByItemIdOrderByIdAsc(itemId)).thenReturn(List.of(comment));
-        when(bookingRepository.getLastBooking(any(), anyLong())).thenReturn(booking2);
-        when(bookingRepository.getNextBooking(any(), anyLong())).thenReturn(booking1);
+        itemDto.setNextBooking(BookingMapper.toBookingForItemDto(booking2));
+        itemDto.setLastBooking(BookingMapper.toBookingForItemDto(booking1));
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(item));
+        when(commentRepository.findAllByItemInOrderByCreatedAsc(any()))
+                .thenReturn(List.of(comment));
+        when(bookingRepository.findAllByItemInAndStatusIsOrderByIdAsc(any(), any()))
+                .thenReturn(List.of(booking1, booking2));
 
         ItemDto result = itemService.findItemById(userId, itemId);
 
@@ -426,13 +461,17 @@ class ItemServiceImplTest {
         Long userId = 1L;
         Integer from = 0;
         Integer size = 10;
-        User user = new User();
-        Pageable pageable = PageRequest.of(from, size);
         ItemDto itemDto = new ItemDto();
+        itemDto.setComments(Collections.emptyList());
         ItemDto itemDto1 = new ItemDto();
+        itemDto1.setComments(Collections.emptyList());
         when(userRepository.existsById(userId)).thenReturn(true);
-        when(userRepository.getReferenceById(userId)).thenReturn(user);
-        when(itemRepository.findByOwner(user, pageable)).thenReturn(List.of(new Item(), new Item()));
+        when(itemRepository.findAllByOwner_Id(anyLong(), any()))
+                .thenReturn(List.of(new Item(), new Item()));
+        when(bookingRepository.findAllByItemInAndStatusIsOrderByIdAsc(any(), any()))
+                .thenReturn(Collections.emptyList());
+        when(commentRepository.findAllByItemInOrderByCreatedAsc(any()))
+                .thenReturn(Collections.emptyList());
 
         List<ItemDto> result = itemService.findUserAllItems(userId, from, size);
 
@@ -445,11 +484,8 @@ class ItemServiceImplTest {
         Long userId = 1L;
         Integer from = 0;
         Integer size = 10;
-        User user = new User();
-        Pageable pageable = PageRequest.of(from, size);
         when(userRepository.existsById(userId)).thenReturn(true);
-        when(userRepository.getReferenceById(userId)).thenReturn(user);
-        when(itemRepository.findByOwner(user, pageable)).thenReturn(Collections.emptyList());
+        when(itemRepository.findAllByOwner_Id(anyLong(), any())).thenReturn(Collections.emptyList());
 
         List<ItemDto> result = itemService.findUserAllItems(userId, from, size);
 
@@ -465,10 +501,20 @@ class ItemServiceImplTest {
         String text = "Ручка";
         User user = new User();
         user.setId(1L);
-        Item item = new Item(1L, "Ручка шариковая", "Удобно писать",
-                true, user, null);
-        Item item2 = new Item(2L, "Отвертка", "Удобная ручка", true,
-                user, null);
+        Item item = new Item();
+        item.setId(1L);
+        item.setName("Ручка шариковая");
+        item.setDescription("Удобно писать");
+        item.setAvailable(true);
+        item.setOwner(user);
+        item.setComments(null);
+        Item item2 = new Item();
+        item2.setId(1L);
+        item2.setName("Отвертка");
+        item2.setDescription("Удобная ручка");
+        item2.setAvailable(true);
+        item2.setOwner(user);
+        item2.setComments(null);
         ItemDto itemDto = ItemMapper.toItemDto(item);
         ItemDto itemDto1 = ItemMapper.toItemDto(item2);
         when(itemRepository.searchByText(text, pageable)).thenReturn(List.of(item, item2));
@@ -483,7 +529,6 @@ class ItemServiceImplTest {
     void searchItemByNameAndDescriptionWhenTextIsEmptyThenReturnEmptyList() {
         Integer from = 0;
         Integer size = 10;
-        Pageable pageable = PageRequest.of(from, size);
         String text = "";
 
         List<ItemDto> result = itemService.searchItemByNameAndDescription(text, from, size);

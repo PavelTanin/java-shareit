@@ -13,7 +13,9 @@ import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.mapper.BookingMapper;
 import ru.practicum.shareit.exception.*;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
+import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 import ru.practicum.shareit.validator.CustomValidator;
 
@@ -38,17 +40,22 @@ public class BookingServiceImpl implements BookingService {
     public BookingDto createBooking(BookingIncomeInfo bookingIncomeInfo, Long userId) {
         log.info("Попытка создать новую заявку на аренду");
         customValidator.isBookingValid(bookingIncomeInfo);
-        userExistAndAuthorizated(userId);
-        var itemId = bookingIncomeInfo.getItemId();
-        if (!itemRepository.existsById(itemId)) {
+        isUserAuthorizated(userId);
+        User user = userRepository.findById(userId).orElse(null);
+        Item item = itemRepository.findById(bookingIncomeInfo.getItemId()).orElse(null);
+        if (user == null) {
+            log.info("Пользователь не зарегестрирован");
+            throw new ObjectNotFoundException("Пользователь не зарегестрирован");
+        }
+        if (item == null) {
             log.info("Предмет отсутствует");
             throw new ObjectNotFoundException("Невозможно арендовать несуществующую вещь");
         }
-        if (!itemRepository.isAvailable(itemId)) {
-            log.info("Предмет {} не доступен для аренды", itemId);
+        if (item.getAvailable() == false) {
+            log.info("Предмет {} не доступен для аренды", item.getId());
             throw new ItemNotAvailableException("Данный предмет не доступен для аренды");
         }
-        if (itemRepository.getOwnerId(itemId).equals(userId)) {
+        if (item.getOwner().getId().equals(userId)) {
             log.info("Пользователь пытается арендовать собственную вещь");
             throw new BookedByOwnerException("Пользователи не могут бронировать собственные вещи");
         }
@@ -56,37 +63,39 @@ public class BookingServiceImpl implements BookingService {
         booking.setStart(bookingIncomeInfo.getStart());
         booking.setEnd(bookingIncomeInfo.getEnd());
         booking.setStatus(Status.WAITING);
-        booking.setBooker(userRepository.getReferenceById(userId));
-        booking.setItem(itemRepository.getReferenceById(itemId));
-        log.info("Создана заявка на бронирование id: {} от пользователя id: {}", itemId, userId);
+        booking.setBooker(user);
+        booking.setItem(item);
+        log.info("Создана заявка на бронирование id: {} от пользователя id: {}", item.getId(), userId);
         return BookingMapper.toBookingDto(bookingRepository.save(booking));
     }
 
     @Transactional
     public BookingDto changeBookingStatus(Long bookingId, String isApproved, Long userId) {
         log.info("Попытка изменить статус заявки на аренду");
-        bookingExist(bookingId);
-        var itemId = bookingRepository.getReferenceById(bookingId).getItem().getId();
-        userExistAndAuthorizated(userId);
-        if (!itemRepository.getOwnerId(itemId).equals(userId)) {
-            log.info("Пользователь не является владельцем данного предмета");
-            throw new ObjectNotFoundException("Пользователь не явялется владельцем данного предмета");
+        isUserAuthorizated(userId);
+        isUserExist(userId);
+        Booking booking = bookingRepository.findById(bookingId).orElse(null);
+        if (booking == null) {
+            log.info("Аренда id: {} не создана", bookingId);
+            throw new ObjectNotFoundException("Нет аренды с таким номером");
         }
+        var itemId = booking.getItem().getId();
         if (!itemRepository.existsById(itemId)) {
             log.info("Предмет отсутствует");
             throw new ObjectNotFoundException("Такого предмета не существует");
         }
-        Booking booking = bookingRepository.getReferenceById(bookingId);
+        if (!itemRepository.getOwnerId(itemId).equals(userId)) {
+            log.info("Пользователь не является владельцем данного предмета");
+            throw new ObjectNotFoundException("Пользователь не явялется владельцем данного предмета");
+        }
         if (isApproved.equals("false") && !booking.getStatus().equals(Status.APPROVED)) {
+            log.info("Изменен статус аренды для id: {}", bookingId);
             booking.setStatus(Status.REJECTED);
-            BookingDto bookingDto = BookingMapper.toRejectedBookingDto(bookingRepository.save(booking));
-            log.info("Изменен статус аренды для id: {}", bookingId);
-            return bookingDto;
+            return BookingMapper.toBookingDto(bookingRepository.save(booking));
         } else if (isApproved.equals("true") && !booking.getStatus().equals(Status.APPROVED)) {
-            booking.setStatus(Status.APPROVED);
-            BookingDto bookingDto = BookingMapper.toBookingDto(bookingRepository.save(booking));
             log.info("Изменен статус аренды для id: {}", bookingId);
-            return bookingDto;
+            booking.setStatus(Status.APPROVED);
+            return BookingMapper.toBookingDto(bookingRepository.save(booking));
         } else {
             throw new WrongStatusSetException("Решение по данной аренде уже принято");
         }
@@ -95,11 +104,13 @@ public class BookingServiceImpl implements BookingService {
 
     @Transactional
     public String deleteBooking(Long bookingId, Long userId) {
+        isUserAuthorizated(userId);
+        isUserExist(userId);
         bookingExist(bookingId);
         var itemId = bookingRepository.getReferenceById(bookingId).getItem().getId();
         log.info("Пользователь id: {} пытается удалить заявку на аренду " +
                 "id: {} для предмета id: {}", userId, bookingId, itemId);
-        userExistAndAuthorizated(userId);
+        isUserAuthorizated(userId);
         if (!bookingRepository.getBookerId(bookingId).equals(userId)) {
             log.info("Пользователь не является автором брони");
             throw new OwnerIdAndUserIdException("Только авторы заявки на аренду могут удалять заявку");
@@ -115,12 +126,17 @@ public class BookingServiceImpl implements BookingService {
 
     public BookingDto findById(Long bookingId, Long userId) {
         log.info("Попытка получить информацию об аренде id: {}", bookingId);
-        bookingExist(bookingId);
-        var itemId = bookingRepository.getReferenceById(bookingId).getItem().getId();
-        userExistAndAuthorizated(userId);
-        if (bookingRepository.getBookerId(bookingId).equals(userId) || itemRepository.getOwnerId(itemId).equals(userId)) {
+        isUserAuthorizated(userId);
+        isUserExist(userId);
+        Booking booking = bookingRepository.findById(bookingId).orElse(null);
+        if (booking == null) {
+            log.info("Аренда id: {} не создана", bookingId);
+            throw new ObjectNotFoundException("Нет аренды с таким номером");
+        }
+        var itemId = booking.getItem().getId();
+        if (booking.getBooker().getId().equals(userId) || itemRepository.getOwnerId(itemId).equals(userId)) {
             log.info("Получена информация об аренде id: {}", bookingId);
-            BookingDto bookingDto = BookingMapper.toBookingDto(bookingRepository.getReferenceById(bookingId));
+            BookingDto bookingDto = BookingMapper.toBookingDto(booking);
             return bookingDto;
         } else {
             log.info("Пользователь не является владельцем вещи или автором аренды");
@@ -130,7 +146,8 @@ public class BookingServiceImpl implements BookingService {
 
     public List<BookingDto> findUserBookings(Long userId, BookingState state, Integer from, Integer size) {
         log.info("Попытка получить информацию о всех созданных бронях пользователя userId: {}", userId);
-        userExistAndAuthorizated(userId);
+        isUserAuthorizated(userId);
+        isUserExist(userId);
         customValidator.isPageableParamsCorrect(from, size);
         Pageable pageRequest = PageRequest.of(from, size);
         switch (state) {
@@ -182,7 +199,8 @@ public class BookingServiceImpl implements BookingService {
 
     public List<BookingDto> findOwnerBookings(Long userId, BookingState state, Integer from, Integer size) {
         log.info("Попытка получить информацию о всех бронях для предметов пользователя userId: {}", userId);
-        userExistAndAuthorizated(userId);
+        isUserAuthorizated(userId);
+        isUserExist(userId);
         customValidator.isPageableParamsCorrect(from, size);
         Pageable pageRequest = PageRequest.of(from, size);
         List<Long> itemsIds = itemRepository.getItemsIdsOfOwner(userId);
@@ -234,11 +252,14 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private void userExistAndAuthorizated(Long userId) {
+    private void isUserAuthorizated(Long userId) {
         if (userId <= 0) {
             log.info("Пользователь неавторизован");
             throw new UserNotAuthorizedException("Пользователь неавторизован");
         }
+    }
+
+    private void isUserExist(Long userId) {
         if (!userRepository.existsById(userId)) {
             log.info("Пользователь не зарегестрирован");
             throw new ObjectNotFoundException("Пользователь не зарегестрирован");

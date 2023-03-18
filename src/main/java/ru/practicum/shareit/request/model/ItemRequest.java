@@ -1,16 +1,21 @@
 package ru.practicum.shareit.request.model;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
 
 
 @Entity
 @Table(name = "requests")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class ItemRequest {
 
@@ -28,6 +33,9 @@ public class ItemRequest {
     @Column(name = "create_time")
     private LocalDateTime created;
 
+    @Transient
+    private List<Item> items;
+
     public ItemRequest(Long id, String description, LocalDateTime created) {
         this.id = id;
         this.description = description;
@@ -36,5 +44,18 @@ public class ItemRequest {
 
     public ItemRequest(long id) {
         this.id = id;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ItemRequest that = (ItemRequest) o;
+        return id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

@@ -33,8 +33,11 @@ public class UserServiceImp implements UserService {
     @Transactional
     public UserDto updateUser(UserDto userDto, Long userId) {
         log.info("Попытка обновить информацию о пользователе id:{}", userId);
-        userExist(userId);
-        User user = userRepository.getReferenceById(userId);
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            log.info("Пользователь не зарегестрирован");
+            throw new ObjectNotFoundException("Пользователь не зарегестрирован");
+        }
         if (userDto.getName() != null) {
             user.setName(userDto.getName());
         }
@@ -57,9 +60,13 @@ public class UserServiceImp implements UserService {
     @Transactional
     public UserDto findUserById(Long userId) {
         log.info("Попытка получить информацию о пользователе");
-        userExist(userId);
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            log.info("Пользователь не зарегестрирован");
+            throw new ObjectNotFoundException("Пользователь не зарегестрирован");
+        }
         log.info("Получена информация о пользователе {}", userId);
-        return UserMapper.toUserDto(userRepository.getReferenceById(userId));
+        return UserMapper.toUserDto(user);
     }
 
     @Transactional

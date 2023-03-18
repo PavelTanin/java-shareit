@@ -24,6 +24,7 @@ import ru.practicum.shareit.validator.CustomValidator;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -50,29 +51,29 @@ class BookingServiceImplTest {
     void createBookingWhenItemIsAvailableThenCreateBooking() {
         Long userId = 1L;
         Long itemId = 1L;
-        BookingIncomeInfo creatBooking = new BookingIncomeInfo();
-        creatBooking.setStart(LocalDateTime.of(2023, 3, 10, 17, 45));
-        creatBooking.setEnd(LocalDateTime.of(2023, 3, 20, 17, 45));
-        creatBooking.setItemId(1L);
-        User user = new User();
-        user.setId(userId);
+        BookingIncomeInfo createBooking = new BookingIncomeInfo();
+        createBooking.setStart(LocalDateTime.of(2023, 3, 10, 17, 45));
+        createBooking.setEnd(LocalDateTime.of(2023, 3, 20, 17, 45));
+        createBooking.setItemId(1L);
+        User bookerUser = new User();
+        bookerUser.setId(userId);
+        User ownerUser = new User();
+        ownerUser.setId(2L);
         Item item = new Item();
         item.setId(itemId);
         item.setName("Test");
+        item.setOwner(ownerUser);
+        item.setAvailable(true);
         Booking booking = new Booking(null,
                 LocalDateTime.of(2023, 3, 10, 17, 45),
                 LocalDateTime.of(2023, 3, 20, 17, 45),
-                Status.WAITING, user, item);
+                Status.WAITING, bookerUser, item);
         BookingDto expectedResult = BookingMapper.toBookingDto(booking);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRepository.existsById(itemId)).thenReturn(true);
-        when(itemRepository.isAvailable(itemId)).thenReturn(true);
-        when(itemRepository.getOwnerId(itemId)).thenReturn(2L);
-        when(userRepository.getReferenceById(userId)).thenReturn(user);
-        when(itemRepository.getReferenceById(itemId)).thenReturn(item);
-        when(bookingRepository.save(booking)).thenReturn(booking);
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(bookerUser));
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(item));
+        when(bookingRepository.save(any())).thenReturn(booking);
 
-        BookingDto result = bookingService.createBooking(creatBooking, userId);
+        BookingDto result = bookingService.createBooking(createBooking, userId);
 
         assertEquals(expectedResult, result);
     }
@@ -85,31 +86,42 @@ class BookingServiceImplTest {
         createBooking.setStart(LocalDateTime.of(2023, 3, 10, 17, 45));
         createBooking.setEnd(LocalDateTime.of(2023, 3, 20, 17, 45));
         createBooking.setItemId(1L);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRepository.existsById(itemId)).thenReturn(true);
-        when(itemRepository.isAvailable(itemId)).thenReturn(false);
+        User bookerUser = new User();
+        bookerUser.setId(userId);
+        User ownerUser = new User();
+        ownerUser.setId(2L);
+        Item item = new Item();
+        item.setId(itemId);
+        item.setName("Test");
+        item.setOwner(ownerUser);
+        item.setAvailable(false);
+        Booking booking = new Booking(null,
+                LocalDateTime.of(2023, 3, 10, 17, 45),
+                LocalDateTime.of(2023, 3, 20, 17, 45),
+                Status.WAITING, bookerUser, item);
+        BookingDto expectedResult = BookingMapper.toBookingDto(booking);
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(bookerUser));
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(item));
 
         assertThrows(ItemNotAvailableException.class,
                 () -> bookingService.createBooking(createBooking, userId));
 
-        verify(itemRepository, never()).getOwnerId(anyLong());
         verify(bookingRepository, never()).save(any());
     }
 
     @Test
-    void createBookingWhenItemNotValidThenThrowIncorrectTimeException() {
+    void createBookingWhenBookingNotValidThenThrowIncorrectTimeException() {
         Long userId = 1L;
         BookingIncomeInfo createBooking = new BookingIncomeInfo();
         createBooking.setStart(LocalDateTime.of(2023, 3, 19, 17, 45));
         createBooking.setEnd(LocalDateTime.of(2023, 3, 20, 17, 45));
-        createBooking.setItemId(1L);
         doThrow(IncorrectBookingTimeException.class).when(customValidator).isBookingValid(createBooking);
 
         assertThrows(IncorrectBookingTimeException.class,
                 () -> bookingService.createBooking(createBooking, userId));
 
-        verify(itemRepository, never()).isAvailable(anyLong());
-        verify(itemRepository, never()).getOwnerId(anyLong());
+        verify(userRepository, never()).findById(anyLong());
+        verify(itemRepository, never()).findById(anyLong());
         verify(bookingRepository, never()).save(any());
     }
 
@@ -118,13 +130,23 @@ class BookingServiceImplTest {
         Long userId = 1L;
         Long itemId = 1L;
         BookingIncomeInfo createBooking = new BookingIncomeInfo();
-        createBooking.setStart(LocalDateTime.of(2023, 3, 19, 17, 45));
+        createBooking.setStart(LocalDateTime.of(2023, 3, 10, 17, 45));
         createBooking.setEnd(LocalDateTime.of(2023, 3, 20, 17, 45));
         createBooking.setItemId(1L);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRepository.existsById(itemId)).thenReturn(true);
-        when(itemRepository.isAvailable(itemId)).thenReturn(true);
-        when(itemRepository.getOwnerId(itemId)).thenReturn(1L);
+        User bookerUser = new User();
+        bookerUser.setId(userId);
+        Item item = new Item();
+        item.setId(itemId);
+        item.setName("Test");
+        item.setOwner(bookerUser);
+        item.setAvailable(true);
+        Booking booking = new Booking(null,
+                LocalDateTime.of(2023, 3, 10, 17, 45),
+                LocalDateTime.of(2023, 3, 20, 17, 45),
+                Status.WAITING, bookerUser, item);
+        BookingDto expectedResult = BookingMapper.toBookingDto(booking);
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(bookerUser));
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(item));
 
         assertThrows(BookedByOwnerException.class,
                 () -> bookingService.createBooking(createBooking, userId));
@@ -151,12 +173,11 @@ class BookingServiceImplTest {
                 LocalDateTime.of(2023, 3, 20, 17, 45),
                 Status.APPROVED, user, item);
         BookingDto expectedResult = BookingMapper.toBookingDto(updatedBooking);
-        when(bookingRepository.existsById(bookingId)).thenReturn(true);
-        when(userRepository.existsById(userId)).thenReturn(true);
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(bookingRepository.findById(anyLong())).thenReturn(Optional.of(booking));
         when(itemRepository.existsById(anyLong())).thenReturn(true);
         when(itemRepository.getOwnerId(anyLong())).thenReturn(1L);
-        when(bookingRepository.getReferenceById(bookingId)).thenReturn(booking);
-        when(bookingRepository.save(updatedBooking)).thenReturn(updatedBooking);
+        when(bookingRepository.save(any())).thenReturn(updatedBooking);
 
         BookingDto result = bookingService.changeBookingStatus(bookingId, isApproved, userId);
 
@@ -183,46 +204,12 @@ class BookingServiceImplTest {
                 LocalDateTime.of(2023, 3, 10, 17, 45),
                 LocalDateTime.of(2023, 3, 20, 17, 45),
                 Status.REJECTED, user, item);
-        BookingDto expectedResult = BookingMapper.toRejectedBookingDto(updatedBooking);
-        when(bookingRepository.existsById(bookingId)).thenReturn(true);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRepository.existsById(anyLong())).thenReturn(true);
-        when(itemRepository.getOwnerId(anyLong())).thenReturn(1L);
-        when(bookingRepository.getReferenceById(bookingId)).thenReturn(booking);
-        when(bookingRepository.save(updatedBooking)).thenReturn(updatedBooking);
-
-        BookingDto result = bookingService.changeBookingStatus(bookingId, isApproved, userId);
-
-        assertEquals(expectedResult, result);
-        verify(bookingRepository, times(1)).save(any());
-
-    }
-
-    @Test
-    void changeBookingStatusWhenStatusChangedToApprovedThenSaveStatus() {
-        Long bookingId = 1L;
-        Long userId = 1L;
-        String isApproved = "true";
-        User user = new User();
-        user.setId(userId);
-        Item item = new Item();
-        item.setId(1L);
-        item.setName("Test");
-        Booking booking = new Booking(1L,
-                LocalDateTime.of(2023, 3, 10, 17, 45),
-                LocalDateTime.of(2023, 3, 20, 17, 45),
-                Status.WAITING, user, item);
-        Booking updatedBooking = new Booking(1L,
-                LocalDateTime.of(2023, 3, 10, 17, 45),
-                LocalDateTime.of(2023, 3, 20, 17, 45),
-                Status.APPROVED, user, item);
         BookingDto expectedResult = BookingMapper.toBookingDto(updatedBooking);
-        when(bookingRepository.existsById(bookingId)).thenReturn(true);
-        when(userRepository.existsById(userId)).thenReturn(true);
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(bookingRepository.findById(anyLong())).thenReturn(Optional.of(booking));
         when(itemRepository.existsById(anyLong())).thenReturn(true);
         when(itemRepository.getOwnerId(anyLong())).thenReturn(1L);
-        when(bookingRepository.getReferenceById(bookingId)).thenReturn(booking);
-        when(bookingRepository.save(updatedBooking)).thenReturn(updatedBooking);
+        when(bookingRepository.save(any())).thenReturn(updatedBooking);
 
         BookingDto result = bookingService.changeBookingStatus(bookingId, isApproved, userId);
 
@@ -235,7 +222,7 @@ class BookingServiceImplTest {
     void changeBookingStatusWhenStatusAlreadyChangedThenThrowWrongStatusException() {
         Long bookingId = 1L;
         Long userId = 1L;
-        String isApproved = "false";
+        String isApproved = "true";
         User user = new User();
         user.setId(userId);
         Item item = new Item();
@@ -245,11 +232,10 @@ class BookingServiceImplTest {
                 LocalDateTime.of(2023, 3, 10, 17, 45),
                 LocalDateTime.of(2023, 3, 20, 17, 45),
                 Status.APPROVED, user, item);
-        when(bookingRepository.existsById(bookingId)).thenReturn(true);
-        when(userRepository.existsById(userId)).thenReturn(true);
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(bookingRepository.findById(anyLong())).thenReturn(Optional.of(booking));
         when(itemRepository.existsById(anyLong())).thenReturn(true);
         when(itemRepository.getOwnerId(anyLong())).thenReturn(1L);
-        when(bookingRepository.getReferenceById(bookingId)).thenReturn(booking);
 
         assertThrows(WrongStatusSetException.class,
                 () -> bookingService.changeBookingStatus(bookingId, isApproved, userId));
@@ -270,11 +256,11 @@ class BookingServiceImplTest {
         booking.setItem(item);
         booking.setBooker(user);
         String expectedResult = "Заявка на аренду успешно удалена";
-        when(bookingRepository.existsById(bookingId)).thenReturn(true);
+        when(userRepository.existsById(anyLong())).thenReturn(true);
         when(itemRepository.existsById(anyLong())).thenReturn(true);
-        when(bookingRepository.getReferenceById(bookingId)).thenReturn(booking);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(bookingRepository.getBookerId(bookingId)).thenReturn(userId);
+        when(bookingRepository.existsById(anyLong())).thenReturn(true);
+        when(bookingRepository.getReferenceById(anyLong())).thenReturn(booking);
+        when(bookingRepository.getBookerId(anyLong())).thenReturn(1L);
 
         String result = bookingService.deleteBooking(bookingId, userId);
 
@@ -293,9 +279,9 @@ class BookingServiceImplTest {
         Booking booking = new Booking();
         booking.setItem(item);
         booking.setBooker(user);
+        when(userRepository.existsById(userId)).thenReturn(true);
         when(bookingRepository.existsById(bookingId)).thenReturn(true);
         when(bookingRepository.getReferenceById(bookingId)).thenReturn(booking);
-        when(userRepository.existsById(userId)).thenReturn(true);
         when(bookingRepository.getBookerId(bookingId)).thenReturn(2L);
 
         assertThrows(OwnerIdAndUserIdException.class,
@@ -306,7 +292,7 @@ class BookingServiceImplTest {
     }
 
     @Test
-    void findByIdWhenUserIsOwmerOfItemThenReturnBooking() {
+    void findByIdWhenUserIsOwnerOfItemThenReturnBooking() {
         Long userId = 1L;
         Long itemId = 1L;
         Long bookingId = 1L;
@@ -326,12 +312,9 @@ class BookingServiceImplTest {
         createBooking.setItem(item);
         createBooking.setStatus(Status.WAITING);
         BookingDto expectedResult = BookingMapper.toBookingDto(createBooking);
-        when(bookingRepository.existsById(bookingId)).thenReturn(true);
-        when(bookingRepository.getReferenceById(bookingId)).thenReturn(createBooking);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(bookingRepository.getBookerId(bookingId)).thenReturn(2L);
-        when(itemRepository.getOwnerId(itemId)).thenReturn(1L);
-        when(bookingRepository.getReferenceById(bookingId)).thenReturn(createBooking);
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(bookingRepository.findById(anyLong())).thenReturn(Optional.of(createBooking));
+        when(itemRepository.getOwnerId(anyLong())).thenReturn(1L);
 
         BookingDto result = bookingService.findById(bookingId, userId);
 
@@ -349,23 +332,19 @@ class BookingServiceImplTest {
         createBooking.setEnd(LocalDateTime.of(2023, 3, 20, 17, 45));
         createBooking.setId(bookingId);
         User user = new User();
-        user.setId(2L);
+        user.setId(userId);
         User user2 = new User();
-        user2.setId(userId);
-        createBooking.setBooker(user);
+        user2.setId(2L);
         Item item = new Item();
         item.setId(itemId);
         item.setName("Test");
         item.setOwner(user2);
         createBooking.setItem(item);
+        createBooking.setBooker(user);
         createBooking.setStatus(Status.WAITING);
         BookingDto expectedResult = BookingMapper.toBookingDto(createBooking);
-        when(bookingRepository.existsById(bookingId)).thenReturn(true);
-        when(bookingRepository.getReferenceById(bookingId)).thenReturn(createBooking);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(bookingRepository.getBookerId(bookingId)).thenReturn(2L);
-        when(itemRepository.getOwnerId(itemId)).thenReturn(1L);
-        when(bookingRepository.getReferenceById(bookingId)).thenReturn(createBooking);
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(bookingRepository.findById(anyLong())).thenReturn(Optional.of(createBooking));
 
         BookingDto result = bookingService.findById(bookingId, userId);
 
@@ -385,26 +364,21 @@ class BookingServiceImplTest {
         User user = new User();
         user.setId(2L);
         User user2 = new User();
-        user2.setId(userId);
-        createBooking.setBooker(user);
+        user2.setId(3L);
         Item item = new Item();
         item.setId(itemId);
         item.setName("Test");
         item.setOwner(user2);
         createBooking.setItem(item);
+        createBooking.setBooker(user);
         createBooking.setStatus(Status.WAITING);
         BookingDto expectedResult = BookingMapper.toBookingDto(createBooking);
-        when(bookingRepository.existsById(bookingId)).thenReturn(true);
-        when(bookingRepository.getReferenceById(bookingId)).thenReturn(createBooking);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(bookingRepository.getBookerId(bookingId)).thenReturn(3L);
-        when(itemRepository.getOwnerId(itemId)).thenReturn(4L);
-        when(bookingRepository.getReferenceById(bookingId)).thenReturn(createBooking);
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(bookingRepository.findById(anyLong())).thenReturn(Optional.of(createBooking));
+        when(itemRepository.getOwnerId(anyLong())).thenReturn(3L);
 
         assertThrows(OwnerIdAndUserIdException.class,
                 () -> bookingService.findById(bookingId, userId));
-
-        verify(bookingRepository, times(1)).getReferenceById(bookingId);
 
     }
 
@@ -453,18 +427,18 @@ class BookingServiceImplTest {
         BookingDto expectedFuture = BookingMapper.toBookingDto(bookingFuture);
         BookingDto expectedWaiting = BookingMapper.toBookingDto(bookingWaiting);
         BookingDto expectedRejected = BookingMapper.toBookingDto(bookingRejected);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(bookingRepository.findCurrentUserBookings(userId, pageable))
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(bookingRepository.findCurrentUserBookings(anyLong(), any()))
                 .thenReturn(List.of(bookingCurrent));
-        when(bookingRepository.findPastUserBookings(userId, pageable))
+        when(bookingRepository.findPastUserBookings(anyLong(), any()))
                 .thenReturn(List.of(bookingPast));
-        when(bookingRepository.findFutureUserBookings(userId, pageable))
+        when(bookingRepository.findFutureUserBookings(anyLong(), any()))
                 .thenReturn(List.of(bookingFuture));
-        when(bookingRepository.findWaitingUserBookings(userId, pageable))
+        when(bookingRepository.findWaitingUserBookings(anyLong(), any()))
                 .thenReturn(List.of(bookingWaiting));
-        when(bookingRepository.findRejectedUserBookings(userId, pageable))
+        when(bookingRepository.findRejectedUserBookings(anyLong(), any()))
                 .thenReturn(List.of(bookingRejected));
-        when(bookingRepository.findAllUsersBookings(userId, pageable)).thenReturn(List.of(bookingCurrent,
+        when(bookingRepository.findAllUsersBookings(anyLong(), any())).thenReturn(List.of(bookingCurrent,
                 bookingPast, bookingFuture, bookingWaiting, bookingRejected));
 
         List<BookingDto> resultCurrent = bookingService.findUserBookings(userId, stateCurrent, from, size);
@@ -499,17 +473,17 @@ class BookingServiceImplTest {
         BookingState stateRejected = BookingState.REJECTED;
         BookingState stateAll = BookingState.ALL;
         when(userRepository.existsById(userId)).thenReturn(true);
-        when(bookingRepository.findCurrentUserBookings(userId, pageable))
+        when(bookingRepository.findCurrentUserBookings(anyLong(), any()))
                 .thenReturn(Collections.emptyList());
-        when(bookingRepository.findPastUserBookings(userId, pageable))
+        when(bookingRepository.findPastUserBookings(anyLong(), any()))
                 .thenReturn(Collections.emptyList());
-        when(bookingRepository.findFutureUserBookings(userId, pageable))
+        when(bookingRepository.findFutureUserBookings(anyLong(), any()))
                 .thenReturn(Collections.emptyList());
-        when(bookingRepository.findWaitingUserBookings(userId, pageable))
+        when(bookingRepository.findWaitingUserBookings(anyLong(), any()))
                 .thenReturn(Collections.emptyList());
-        when(bookingRepository.findRejectedUserBookings(userId, pageable))
+        when(bookingRepository.findRejectedUserBookings(anyLong(), any()))
                 .thenReturn(Collections.emptyList());
-        when(bookingRepository.findAllUsersBookings(userId, pageable)).thenReturn(Collections.emptyList());
+        when(bookingRepository.findAllUsersBookings(anyLong(), any())).thenReturn(Collections.emptyList());
 
         List<BookingDto> resultCurrent = bookingService.findUserBookings(userId, stateCurrent, from, size);
         List<BookingDto> resultPast = bookingService.findUserBookings(userId, statePast, from, size);
@@ -579,19 +553,19 @@ class BookingServiceImplTest {
         BookingDto expectedFuture = BookingMapper.toBookingDto(bookingFuture);
         BookingDto expectedWaiting = BookingMapper.toBookingDto(bookingWaiting);
         BookingDto expectedRejected = BookingMapper.toBookingDto(bookingRejected);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRepository.getItemsIdsOfOwner(userId)).thenReturn(List.of(1L, 2L));
-        when(bookingRepository.findCurrentOwnerBookings(itemsId, pageable))
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(itemRepository.getItemsIdsOfOwner(anyLong())).thenReturn(List.of(1L, 2L));
+        when(bookingRepository.findCurrentOwnerBookings(anyList(), any()))
                 .thenReturn(List.of(bookingCurrent));
-        when(bookingRepository.findPastOwnerBookings(itemsId, pageable))
+        when(bookingRepository.findPastOwnerBookings(anyList(), any()))
                 .thenReturn(List.of(bookingPast));
-        when(bookingRepository.findFutureOwnerBookings(itemsId, pageable))
+        when(bookingRepository.findFutureOwnerBookings(anyList(), any()))
                 .thenReturn(List.of(bookingFuture));
-        when(bookingRepository.findWaitingOwnerBookings(itemsId, pageable))
+        when(bookingRepository.findWaitingOwnerBookings(anyList(), any()))
                 .thenReturn(List.of(bookingWaiting));
-        when(bookingRepository.findRejectedOwnerBookings(itemsId, pageable))
+        when(bookingRepository.findRejectedOwnerBookings(anyList(), any()))
                 .thenReturn(List.of(bookingRejected));
-        when(bookingRepository.findAllOwnerBookings(itemsId, pageable)).thenReturn(List.of(bookingCurrent,
+        when(bookingRepository.findAllOwnerBookings(anyList(), any())).thenReturn(List.of(bookingCurrent,
                 bookingPast, bookingFuture, bookingWaiting, bookingRejected));
 
         List<BookingDto> resultCurrent = bookingService.findOwnerBookings(userId, stateCurrent, from, size);
@@ -625,19 +599,19 @@ class BookingServiceImplTest {
         BookingState stateRejected = BookingState.REJECTED;
         BookingState stateAll = BookingState.ALL;
         List<Long> itemsId = Collections.emptyList();
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRepository.getItemsIdsOfOwner(userId)).thenReturn(Collections.emptyList());
-        when(bookingRepository.findCurrentOwnerBookings(itemsId, pageable))
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(itemRepository.getItemsIdsOfOwner(anyLong())).thenReturn(Collections.emptyList());
+        when(bookingRepository.findCurrentOwnerBookings(anyList(), any()))
                 .thenReturn(Collections.emptyList());
-        when(bookingRepository.findPastOwnerBookings(itemsId, pageable))
+        when(bookingRepository.findPastOwnerBookings(anyList(), any()))
                 .thenReturn(Collections.emptyList());
-        when(bookingRepository.findFutureOwnerBookings(itemsId, pageable))
+        when(bookingRepository.findFutureOwnerBookings(anyList(), any()))
                 .thenReturn(Collections.emptyList());
-        when(bookingRepository.findWaitingOwnerBookings(itemsId, pageable))
+        when(bookingRepository.findWaitingOwnerBookings(anyList(), any()))
                 .thenReturn(Collections.emptyList());
-        when(bookingRepository.findRejectedOwnerBookings(itemsId, pageable))
+        when(bookingRepository.findRejectedOwnerBookings(anyList(), any()))
                 .thenReturn(Collections.emptyList());
-        when(bookingRepository.findAllOwnerBookings(itemsId, pageable)).thenReturn(Collections.emptyList());
+        when(bookingRepository.findAllOwnerBookings(anyList(), any())).thenReturn(Collections.emptyList());
 
         List<BookingDto> resultCurrent = bookingService.findOwnerBookings(userId, stateCurrent, from, size);
         List<BookingDto> resultPast = bookingService.findOwnerBookings(userId, statePast, from, size);

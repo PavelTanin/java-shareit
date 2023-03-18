@@ -5,12 +5,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import ru.practicum.shareit.exception.EmptyRequestDescriptionException;
-import ru.practicum.shareit.exception.IncorrectIdException;
 import ru.practicum.shareit.exception.ObjectNotFoundException;
 import ru.practicum.shareit.exception.OwnerIdAndUserIdException;
+import ru.practicum.shareit.exception.UserNotAuthorizedException;
 import ru.practicum.shareit.item.dto.ItemForRequestDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -61,9 +62,8 @@ class ItemRequestServiceImplTest {
         expectedResult.setItems(Collections.emptyList());
         ItemRequestDto requestDto = new ItemRequestDto();
         requestDto.setDescription("Test");
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(userRepository.getReferenceById(userId)).thenReturn(user);
-        when(itemRequestRepository.save(itemRequest)).thenReturn(itemRequest);
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
+        when(itemRequestRepository.save(any())).thenReturn(itemRequest);
 
         ItemRequestDto result = itemRequestService.createRequest(requestDto, userId);
 
@@ -82,10 +82,23 @@ class ItemRequestServiceImplTest {
         assertThrows(EmptyRequestDescriptionException.class,
                 () -> itemRequestService.createRequest(requestDto, userId));
 
-        verify(userRepository, never()).existsById(anyLong());
-        verify(userRepository, never()).getReferenceById(anyLong());
+        verify(userRepository, never()).findById(anyLong());
         verify(itemRequestRepository, never()).save(any());
 
+    }
+
+    @Test
+    void createRequestWhenUserNotAutorizedThenThrowUserNotAuthorized() {
+        Long userId = 0L;
+        User user = new User();
+        user.setId(userId);
+        ItemRequestDto requestDto = new ItemRequestDto();
+
+        assertThrows(UserNotAuthorizedException.class,
+                () -> itemRequestService.createRequest(requestDto, userId));
+
+        verify(userRepository, never()).findById(anyLong());
+        verify(itemRequestRepository, never()).save(any());
     }
 
     @Test
@@ -104,10 +117,8 @@ class ItemRequestServiceImplTest {
         expectedResult.setItems(Collections.emptyList());
         ItemRequestDto requestDto = new ItemRequestDto();
         requestDto.setDescription("Renamed");
-        when(itemRequestRepository.existsById(requestId)).thenReturn(true);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRequestRepository.getRequestorId(requestId)).thenReturn(1L);
-        when(itemRequestRepository.getReferenceById(requestId)).thenReturn(itemRequest);
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(itemRequestRepository.findById(anyLong())).thenReturn(Optional.of(itemRequest));
         when(itemRequestRepository.save(updatedRequest)).thenReturn(updatedRequest);
 
         ItemRequestDto result = itemRequestService.updateItemRequest(requestDto, userId, requestId);
@@ -120,15 +131,16 @@ class ItemRequestServiceImplTest {
         Long userId = 1L;
         Long requestId = 1L;
         User user = new User();
-        user.setId(userId);
-        when(itemRequestRepository.existsById(requestId)).thenReturn(true);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRequestRepository.getRequestorId(requestId)).thenReturn(2L);
+        user.setId(2L);
+        ItemRequest itemRequest = new ItemRequest(requestId, "Test",
+                LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES));
+        itemRequest.setRequestor(user);
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(itemRequestRepository.findById(anyLong())).thenReturn(Optional.of(itemRequest));
 
         assertThrows(OwnerIdAndUserIdException.class,
                 () -> itemRequestService.updateItemRequest(new ItemRequestDto(), userId, requestId));
 
-        verify(itemRequestRepository, never()).getReferenceById(anyLong());
         verify(itemRequestRepository, never()).save(any());
     }
 
@@ -139,13 +151,11 @@ class ItemRequestServiceImplTest {
         User user = new User();
         user.setId(userId);
         when(userRepository.existsById(userId)).thenReturn(true);
+        when(itemRequestRepository.findById(anyLong())).thenReturn(Optional.ofNullable(null));
 
-        assertThrows(IncorrectIdException.class,
+        assertThrows(ObjectNotFoundException.class,
                 () -> itemRequestService.updateItemRequest(new ItemRequestDto(), userId, requestId));
 
-        verify(itemRequestRepository, never()).existsById(anyLong());
-        verify(itemRequestRepository, never()).getRequestorId(anyLong());
-        verify(itemRequestRepository, never()).getReferenceById(anyLong());
         verify(itemRequestRepository, never()).save(any());
     }
 
@@ -190,17 +200,18 @@ class ItemRequestServiceImplTest {
                 LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES));
         itemRequest.setRequestor(userRequestor);
         Item requestedItem1 = new Item(1L, "Test",
-                "Test", true, userOwner, itemRequest);
+                "Test", true, userOwner,
+                itemRequest, Collections.emptyList(), null, null);
         Item requestedItem2 = new Item(2L, "Test",
-                "Test", true, userOwner, itemRequest);
+                "Test", true, userOwner, itemRequest,
+                Collections.emptyList(), null, null);
         ItemForRequestDto itemDto1 = ItemMapper.toItemForRequestDto(requestedItem1);
         ItemForRequestDto itemDto2 = ItemMapper.toItemForRequestDto(requestedItem2);
         ItemRequestDto expectedResult = RequestMapper.toItemRequestDto(itemRequest);
         expectedResult.setItems(List.of(itemDto1, itemDto2));
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRequestRepository.existsById(requestId)).thenReturn(true);
-        when(itemRequestRepository.getReferenceById(requestId)).thenReturn(itemRequest);
-        when(itemRepository.getRequestItems(anyLong()))
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(itemRequestRepository.findById(anyLong())).thenReturn(Optional.of(itemRequest));
+        when(itemRepository.findAllByRequestInOrderByIdAsc(anyList()))
                 .thenReturn(List.of(requestedItem1, requestedItem2));
 
         ItemRequestDto result = itemRequestService.findRequestById(requestId, userId);
@@ -213,19 +224,18 @@ class ItemRequestServiceImplTest {
     void findRequestByIdWhenRequestIsNotExistThenThrowObNFException() {
         Long userId = 1L;
         Long requestId = 1L;
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRequestRepository.existsById(requestId)).thenReturn(false);
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(itemRequestRepository.findById(anyLong())).thenReturn(Optional.ofNullable(null));
 
         assertThrows(ObjectNotFoundException.class,
                 () -> itemRequestService.findRequestById(requestId, userId));
 
-        verify(itemRequestRepository, never()).getReferenceById(requestId);
-        verify(itemRepository, never()).getRequestItems(anyLong());
+        verify(itemRepository, never()).findAllByRequestInOrderByIdAsc(any());
 
     }
 
     @Test
-    void findAllUserRequestsWhenUserIsOwnerOfRequestsThenReturnRequestsList() {
+    void findAllUserRequestsWhenUserIsRequestsorThenReturnRequestsList() {
         Long userId = 1L;
         User userRequestor = new User();
         userRequestor.setId(1L);
@@ -238,11 +248,14 @@ class ItemRequestServiceImplTest {
                 LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES));
         itemRequest2.setRequestor(userRequestor);
         Item requestedItem1 = new Item(1L, "Test",
-                "Test", true, userOwner, itemRequest);
-        Item requestedItem2 = new Item(2L, "Test",
-                "Test", true, userOwner, itemRequest);
-        Item requestedItem3 = new Item(3L, "Test",
-                "Test", true, userOwner, itemRequest2);
+                "Test", true, userOwner, itemRequest, Collections.emptyList(),
+                null, null);
+        Item requestedItem2 = new Item(2L, "Test2",
+                "Test2", true, userOwner, itemRequest, Collections.emptyList(),
+                null, null);
+        Item requestedItem3 = new Item(3L, "Test2",
+                "Test2", true, userOwner, itemRequest2, Collections.emptyList(),
+                null, null);
         ItemForRequestDto requestedItemDto1 = ItemMapper.toItemForRequestDto(requestedItem1);
         ItemForRequestDto requestedItemDto2 = ItemMapper.toItemForRequestDto(requestedItem2);
         ItemForRequestDto requestedItemDto3 = ItemMapper.toItemForRequestDto(requestedItem3);
@@ -251,30 +264,11 @@ class ItemRequestServiceImplTest {
         ItemRequestDto itemRequestDto2 = RequestMapper.toItemRequestDto(itemRequest2);
         itemRequestDto2.setItems(List.of(requestedItemDto3));
         List<ItemRequestDto> expectedResult = List.of(itemRequestDto1, itemRequestDto2);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(userRepository.getReferenceById(userId)).thenReturn(userRequestor);
-        when(itemRequestRepository.findAllByRequestorOrderByIdDesc(userRequestor))
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(userOwner));
+        when(itemRequestRepository.findAllByRequestorOrderByIdAsc(any()))
                 .thenReturn(List.of(itemRequest, itemRequest2));
-        when(itemRepository.getRequestItems(anyLong()))
-                .thenReturn(List.of(requestedItem1, requestedItem2), List.of(requestedItem3));
-
-        List<ItemRequestDto> result = itemRequestService.findAllUserRequests(userId);
-
-        assertEquals(expectedResult, result);
-    }
-
-    @Test
-    void findAllUserRequestsWhenUserIsNotOwnerOfRequestsThenReturnEmptyList() {
-        Long userId = 1L;
-        User userRequestor = new User();
-        userRequestor.setId(2L);
-        User userOwner = new User();
-        userOwner.setId(1L);
-        List<ItemRequestDto> expectedResult = Collections.emptyList();
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(userRepository.getReferenceById(userId)).thenReturn(userRequestor);
-        when(itemRequestRepository.findAllByRequestorOrderByIdDesc(userRequestor))
-                .thenReturn(Collections.emptyList());
+        when(itemRepository.findAllByRequestInOrderByIdAsc(anyList()))
+                .thenReturn(List.of(requestedItem1, requestedItem2, requestedItem3));
 
         List<ItemRequestDto> result = itemRequestService.findAllUserRequests(userId);
 
@@ -286,7 +280,6 @@ class ItemRequestServiceImplTest {
         Long userId = 1L;
         Integer from = 0;
         Integer size = 10;
-        Pageable pageable = PageRequest.of(from, size);
         User userRequestor = new User();
         userRequestor.setId(1L);
         User userOwner = new User();
@@ -301,11 +294,14 @@ class ItemRequestServiceImplTest {
                 LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES));
         itemRequest2.setRequestor(userRequestor);
         Item requestedItem1 = new Item(1L, "Test",
-                "Test", true, userOwner, itemRequest);
+                "Test", true, userOwner, itemRequest, Collections.emptyList(),
+                null, null);
         Item requestedItem2 = new Item(2L, "Test",
-                "Test", true, userOwner, itemRequest);
+                "Test", true, userOwner, itemRequest, Collections.emptyList(),
+                null, null);
         Item requestedItem3 = new Item(3L, "Test",
-                "Test", true, userOwner, itemRequest2);
+                "Test", true, userOwner, itemRequest2, Collections.emptyList(),
+                null, null);
         ItemForRequestDto requestedItemDto1 = ItemMapper.toItemForRequestDto(requestedItem1);
         ItemForRequestDto requestedItemDto2 = ItemMapper.toItemForRequestDto(requestedItem2);
         ItemForRequestDto requestedItemDto3 = ItemMapper.toItemForRequestDto(requestedItem3);
@@ -316,11 +312,13 @@ class ItemRequestServiceImplTest {
         ItemRequestDto itemRequestDto3 = RequestMapper.toItemRequestDto(itemRequest3);
         itemRequestDto3.setItems(Collections.emptyList());
         List<ItemRequestDto> expectedResult = List.of(itemRequestDto1, itemRequestDto2, itemRequestDto3);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(itemRequestRepository.findAllRequests(userId, pageable))
-                .thenReturn(List.of(itemRequest, itemRequest2, itemRequest3));
-        when(itemRepository.getRequestItems(anyLong())).thenReturn(List.of(requestedItem1, requestedItem2),
-                List.of(requestedItem3), Collections.emptyList());
+        List<ItemRequest> requestsToFind = List.of(itemRequest, itemRequest2, itemRequest3);
+        Page<ItemRequest> pagedRequests = new PageImpl<>(requestsToFind);
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(userRequestor));
+        when(itemRequestRepository.findAllByRequestorIsNotOrderByIdAsc(any(), any()))
+                .thenReturn(pagedRequests);
+        when(itemRepository.findAllByRequestInOrderByIdAsc(anyList()))
+                .thenReturn(List.of(requestedItem1, requestedItem2, requestedItem3));
 
         List<ItemRequestDto> result = itemRequestService.findAllRequests(userId, from, size);
 

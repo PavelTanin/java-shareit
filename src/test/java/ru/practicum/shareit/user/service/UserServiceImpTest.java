@@ -17,6 +17,7 @@ import ru.practicum.shareit.validator.CustomValidator;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -63,14 +64,13 @@ class UserServiceImpTest {
 
     @Test
     void updateUserWhenUserIsExistThenSaveUser() {
-        Long userId = 0L;
+        Long userId = 1L;
         UserDto testUser = new UserDto("test@test.ru", "Test");
-        UserDto newUser = new UserDto(0L, "test@test.ru", "Renamed");
+        UserDto newUser = new UserDto(1L, "test@test.ru", "Renamed");
         User user = UserMapper.toUser(newUser);
         user.setId(userId);
         newUser.setId(userId);
-        when(userRepository.getReferenceById(userId)).thenReturn(user);
-        when(userRepository.existsById(userId)).thenReturn(true);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(user)).thenReturn(user);
 
         UserDto result = userService.updateUser(newUser, userId);
@@ -118,11 +118,10 @@ class UserServiceImpTest {
 
     @Test
     void findUserByIdWhenUserExistThenGetUser() {
-        Long userId = 0L;
-        UserDto testUser = new UserDto(0L, "test@test.ru", "Test");
+        Long userId = 1L;
+        UserDto testUser = new UserDto(1L, "test@test.ru", "Test");
         User user = UserMapper.toUser(testUser);
-        when(userRepository.existsById(userId)).thenReturn(true);
-        when(userRepository.getReferenceById(userId)).thenReturn(user);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         UserDto result = userService.findUserById(userId);
 
@@ -133,7 +132,6 @@ class UserServiceImpTest {
     @Test
     void findUserByIdWhenUserNotExistThenThrowObjectNotFoundException() {
         Long userId = 0L;
-        when(userRepository.existsById(userId)).thenReturn(false);
 
         assertThrows(ObjectNotFoundException.class, () -> userService.findUserById(userId));
 

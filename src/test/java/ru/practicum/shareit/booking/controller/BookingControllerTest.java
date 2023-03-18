@@ -38,6 +38,7 @@ class BookingControllerTest {
     @SneakyThrows
     @Test
     void createBooking() {
+        Long userId = 1L;
         BookingIncomeInfo requestBooking = new BookingIncomeInfo();
         requestBooking.setItemId(1L);
         requestBooking.setStart(LocalDateTime.of(2023, 12, 10, 17, 45));
@@ -48,6 +49,7 @@ class BookingControllerTest {
 
 
         String result = mockMvc.perform(post("/bookings")
+                        .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(responseBooking)))
                 .andExpect(status().isOk())
@@ -62,14 +64,16 @@ class BookingControllerTest {
     @SneakyThrows
     @Test
     void approveBooking() {
+        Long userId = 1L;
         Long bookingId = 1L;
         BookingDto responseBooking = new BookingDto(1L, LocalDateTime.now().minusDays(3),
                 LocalDateTime.now().plusDays(3), Status.APPROVED, new UserIdDto(), new ItemForBookingDto());
         when(bookingService.changeBookingStatus(anyLong(), anyString(), anyLong())).thenReturn(responseBooking);
 
         String result = mockMvc.perform(patch("/bookings/{bookingId}?approved=", bookingId)
-                .content("application/json")
-                .content(objectMapper.writeValueAsString(responseBooking)))
+                        .header("X-Sharer-User-Id", userId)
+                        .content("application/json")
+                        .content(objectMapper.writeValueAsString(responseBooking)))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -81,11 +85,13 @@ class BookingControllerTest {
     @SneakyThrows
     @Test
     void deleteBooking() {
+        Long userId = 1L;
         Long bookingId = 1L;
         String expectedResult = "Заявка на аренду успешно удалена";
         when(bookingService.deleteBooking(anyLong(), anyLong())).thenReturn(expectedResult);
 
         String result = mockMvc.perform(delete("/bookings/{bookingId}", bookingId)
+                        .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(expectedResult)))
                 .andExpect(status().isOk())
@@ -99,6 +105,7 @@ class BookingControllerTest {
     @SneakyThrows
     @Test
     void findById() {
+        Long userId = 1L;
         Long bookingId = 1L;
         UserIdDto bookerId = new UserIdDto(1L);
         ItemForBookingDto bookedItem = new ItemForBookingDto(1L, "Test");
@@ -111,8 +118,9 @@ class BookingControllerTest {
         when(bookingService.findById(anyLong(), anyLong())).thenReturn(responseBooking);
 
         String result = mockMvc.perform(get("/bookings/{bookingId}", bookingId)
-                .content("application/json")
-                .content(objectMapper.writeValueAsString(responseBooking)))
+                        .header("X-Sharer-User-Id", userId)
+                        .content("application/json")
+                        .content(objectMapper.writeValueAsString(responseBooking)))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -136,8 +144,9 @@ class BookingControllerTest {
         when(bookingService.findUserBookings(anyLong(), any(), anyInt(), anyInt())).thenReturn(expectedResult);
 
         String result = mockMvc.perform(get("/bookings")
-                .content("application/json")
-                .content(objectMapper.writeValueAsString(expectedResult)))
+                        .header("X-Sharer-User-Id", userId)
+                        .content("application/json")
+                        .content(objectMapper.writeValueAsString(expectedResult)))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -162,6 +171,7 @@ class BookingControllerTest {
         when(bookingService.findOwnerBookings(anyLong(), any(), anyInt(), anyInt())).thenReturn(expectedResult);
 
         String result = mockMvc.perform(get("/bookings/owner")
+                        .header("X-Sharer-User-Id", userId)
                         .content("application/json")
                         .content(objectMapper.writeValueAsString(expectedResult)))
                 .andExpect(status().isOk())

@@ -21,7 +21,7 @@ public class ErrorHandler {
             ItemWrongDescriptionException.class, ItemWrongNameException.class, ItemNotAvailableException.class,
             IncorrectBookingTimeException.class, WrongStatusSetException.class, EmptyCommentTextException.class,
             NoBookedYetException.class, IncorrectItemValueException.class, EmptyRequestDescriptionException.class,
-            IncorrectIdException.class, IncorrectRequestParamsException.class})
+            IncorrectRequestParamsException.class})
     public void handleBadRequest(HttpServletResponse response) throws IOException {
         response.sendError(HttpStatus.BAD_REQUEST.value());
     }
