@@ -12,7 +12,7 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
 
     List<Item> findAllByOwner_Id(Long userId, Pageable pageable);
 
-    List<Item> findAllByRequestInOrderByIdAsc(List <ItemRequest> requests);
+    List<Item> findAllByRequestInOrderByIdAsc(List<ItemRequest> requests);
 
     @Query(value = "select * from ITEMS where lower(NAME) ilike lower('%' || ?1 || '%')" +
             "or lower(DESCRIPTION) ilike lower('%' || ?1 || '%')", nativeQuery = true)
