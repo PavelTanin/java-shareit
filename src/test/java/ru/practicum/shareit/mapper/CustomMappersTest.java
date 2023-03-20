@@ -1,5 +1,6 @@
-package ru.practicum.shareit.user.mapper;
+package ru.practicum.shareit.mapper;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingForItemDto;
@@ -19,6 +20,7 @@ import ru.practicum.shareit.request.mapper.RequestMapper;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.dto.UserIdDto;
+import ru.practicum.shareit.user.mapper.UserMapper;
 import ru.practicum.shareit.user.model.User;
 
 
@@ -34,7 +36,7 @@ class CustomMappersTest {
         UserDto userDto = new UserDto(1L, "test2@test.ru", "Test");
 
         assertAll(
-                () -> assertEquals(UserMapper.toUserDto(user), userDto),
+                () -> Assertions.assertEquals(UserMapper.toUserDto(user), userDto),
                 () -> assertEquals(UserMapper.toUser(userDto), user)
         );
     }

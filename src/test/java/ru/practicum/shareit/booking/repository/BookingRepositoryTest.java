@@ -1,6 +1,5 @@
 package ru.practicum.shareit.booking.repository;
 
-import org.checkerframework.checker.units.qual.A;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
