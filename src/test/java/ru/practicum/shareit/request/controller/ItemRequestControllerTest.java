@@ -16,7 +16,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -36,21 +36,26 @@ class ItemRequestControllerTest {
     @Test
     void createItemRequest() {
         Long userId = 1L;
-        ItemRequestDto responseRequest = new ItemRequestDto(1L, "Test",
-                LocalDateTime.now().minusSeconds(2));
+        ItemRequestDto responseRequest = new ItemRequestDto();
+        responseRequest.setDescription("Test");
+        responseRequest.setCreated(LocalDateTime.now().withNano(0));
+        String requestBody = objectMapper.writeValueAsString(responseRequest);
+        responseRequest.setId(1L);
         when(itemRequestService.createRequest(any(), anyLong())).thenReturn(responseRequest);
 
 
         String result = mockMvc.perform(post("/requests")
                         .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(responseRequest)))
+                        .content(requestBody))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(responseRequest), result);
+        verify(itemRequestService, times(1))
+                .createRequest(any(), anyLong());
     }
 
     @SneakyThrows
@@ -59,20 +64,23 @@ class ItemRequestControllerTest {
         Long userId = 1L;
         Long requestId = 1L;
         ItemRequestDto responseRequest = new ItemRequestDto(1L, "Renamed",
-                LocalDateTime.now().minusSeconds(2));
+                LocalDateTime.now().withNano(0));
+        String requestBody = objectMapper.writeValueAsString(responseRequest);
         when(itemRequestService.updateItemRequest(any(), anyLong(), anyLong())).thenReturn(responseRequest);
 
 
         String result = mockMvc.perform(patch("/requests/{requestId}", requestId)
                         .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(responseRequest)))
+                        .content(requestBody))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(responseRequest), result);
+        verify(itemRequestService, times(1))
+                .updateItemRequest(any(), anyLong(), anyLong());
     }
 
     @SneakyThrows
@@ -84,15 +92,15 @@ class ItemRequestControllerTest {
         when(itemRequestService.deleteItemRequest(anyLong(), anyLong())).thenReturn(expectedResult);
 
         String result = mockMvc.perform(delete("/requests/{requestId}", requestId)
-                        .header("X-Sharer-User-Id", userId)
-                        .content("application/json")
-                        .content(objectMapper.writeValueAsString(expectedResult)))
+                        .header("X-Sharer-User-Id", userId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(expectedResult, result);
+        verify(itemRequestService, times(1))
+                .deleteItemRequest(anyLong(), anyLong());
     }
 
     @SneakyThrows
@@ -109,15 +117,15 @@ class ItemRequestControllerTest {
         when(itemRequestService.findRequestById(anyLong(), anyLong())).thenReturn(responseRequest);
 
         String result = mockMvc.perform(get("/requests/{requestId}", requestId)
-                        .header("X-Sharer-User-Id", userId)
-                        .content("application/json")
-                        .content(objectMapper.writeValueAsString(responseRequest)))
+                        .header("X-Sharer-User-Id", userId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(responseRequest), result);
+        verify(itemRequestService, times(1))
+                .findRequestById(anyLong(), anyLong());
     }
 
     @SneakyThrows
@@ -138,19 +146,19 @@ class ItemRequestControllerTest {
         when(itemRequestService.findAllUserRequests(anyLong())).thenReturn(expectedResult);
 
         String result = mockMvc.perform(get("/requests")
-                        .header("X-Sharer-User-Id", userId)
-                        .content("application/json")
-                        .content(objectMapper.writeValueAsString(expectedResult)))
+                        .header("X-Sharer-User-Id", userId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(expectedResult), result);
+        verify(itemRequestService, times(1))
+                .findAllUserRequests(anyLong());
 
     }
 
-   /* @SneakyThrows
+    @SneakyThrows
     @Test
     void findAllRequests() {
         Long userId = 1L;
@@ -168,14 +176,14 @@ class ItemRequestControllerTest {
         when(itemRequestService.findAllRequests(anyLong(), anyInt(), anyInt())).thenReturn(expectedResult);
 
         String result = mockMvc.perform(get("/requests/all")
-                        .header("X-Sharer-User-Id", userId)
-                        .content("application/json")
-                        .content(objectMapper.writeValueAsString(expectedResult)))
+                        .header("X-Sharer-User-Id", userId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(expectedResult), result);
-    }*/
+        verify(itemRequestService, times(1))
+                .findAllRequests(anyLong(), anyInt(), anyInt());
+    }
 }

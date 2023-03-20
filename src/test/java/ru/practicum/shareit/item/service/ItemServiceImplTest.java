@@ -65,7 +65,6 @@ class ItemServiceImplTest {
         User user = new User(1L, "test@test.ru", "Test");
         ItemDto testItem = new ItemDto("Test", "Test", true);
         ItemDto expectedItem = new ItemDto(1L, "Test", "Test", true);
-        expectedItem.setComments(Collections.emptyList());
         Item item = ItemMapper.toItem(testItem);
         item.setId(1L);
         item.setOwner(user);
@@ -117,7 +116,6 @@ class ItemServiceImplTest {
         testItem.setRequestId(0L);
         Item item = ItemMapper.toItem(testItem);
         item.setRequest(itemRequest);
-        testItem.setComments(Collections.emptyList());
         User user = new User(userId, "test@test.ru", "Test");
         when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
         when(itemRequestRepository.getReferenceById(anyLong())).thenReturn(itemRequest);
@@ -146,7 +144,6 @@ class ItemServiceImplTest {
         oldItem.setOwner(user);
         newItem.setId(itemId);
         newItem.setOwner(user);
-        newItemDto.setComments(Collections.emptyList());
         when(userRepository.existsById(anyLong())).thenReturn(true);
         when(itemRepository.getOwnerId(anyLong())).thenReturn(1L);
         when(itemRepository.findById(anyLong())).thenReturn(Optional.of(oldItem));
@@ -403,8 +400,8 @@ class ItemServiceImplTest {
         Item item = new Item();
         item.setId(itemId);
         item.setOwner(user);
-        item.setComments(Collections.emptyList());
         ItemDto itemDto = ItemMapper.toItemDto(item);
+        itemDto.setComments(Collections.emptyList());
         when(userRepository.existsById(userId)).thenReturn(true);
         when(itemRepository.findById(anyLong())).thenReturn(Optional.of(item));
 
@@ -507,14 +504,12 @@ class ItemServiceImplTest {
         item.setDescription("Удобно писать");
         item.setAvailable(true);
         item.setOwner(user);
-        item.setComments(null);
         Item item2 = new Item();
         item2.setId(1L);
         item2.setName("Отвертка");
         item2.setDescription("Удобная ручка");
         item2.setAvailable(true);
         item2.setOwner(user);
-        item2.setComments(null);
         ItemDto itemDto = ItemMapper.toItemDto(item);
         ItemDto itemDto1 = ItemMapper.toItemDto(item2);
         when(itemRepository.searchByText(text, pageable)).thenReturn(List.of(item, item2));

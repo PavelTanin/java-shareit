@@ -34,19 +34,22 @@ class UserControllerTest {
     @Test
     void createUser() {
         UserDto userDto = new UserDto("test@test.ru", "Test");
+        String requestBody = objectMapper.writeValueAsString(userDto);
         UserDto returnedResult = userDto;
         returnedResult.setId(1L);
-        when(userService.createUser(userDto)).thenReturn(returnedResult);
+        when(userService.createUser(any())).thenReturn(returnedResult);
 
         String result = mockMvc.perform(post("/users")
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(returnedResult)))
+                        .content(requestBody))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(returnedResult), result);
+        verify(userService, times(1))
+                .createUser(any());
     }
 
     @SneakyThrows
@@ -54,20 +57,22 @@ class UserControllerTest {
     void updateUser() {
         Long userId = 1L;
         UserDto userDto = new UserDto(1L,"test@test.ru", "Test");
-        UserDto updatedUser = userDto;
-        updatedUser.setName("Renamed");
-        updatedUser.setEmail("Renamed@test.ru");
-        when(userService.updateUser(userDto, userId)).thenReturn(updatedUser);
+        String requestBody = objectMapper.writeValueAsString(userDto);
+        userDto.setName("Renamed");
+        userDto.setEmail("Renamed@test.ru");
+        when(userService.updateUser(any(), anyLong())).thenReturn(userDto);
 
         String result = mockMvc.perform(patch("/users/{userId}", userId)
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(updatedUser)))
+                        .content(requestBody))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
-        assertEquals(objectMapper.writeValueAsString(updatedUser), result);
+        assertEquals(objectMapper.writeValueAsString(userDto), result);
+        verify(userService, times(1))
+                .updateUser(any(), anyLong());
     }
 
     @SneakyThrows
@@ -75,17 +80,17 @@ class UserControllerTest {
     void deleteUser() {
         Long userId = 1L;
         String returnedResult = "Пользователь " + userId + " удален";
-        when(userService.deleteUser(userId)).thenReturn(returnedResult);
+        when(userService.deleteUser(anyLong())).thenReturn(returnedResult);
 
-        String result = mockMvc.perform(delete("/users/{userId}", userId)
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(returnedResult)))
+        String result = mockMvc.perform(delete("/users/{userId}", userId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(returnedResult, result);
+        verify(userService, times(1))
+                .deleteUser(anyLong());
 
 
 
@@ -96,17 +101,17 @@ class UserControllerTest {
     void findUserById() {
         Long userId = 1L;
         UserDto returnedResult = new UserDto(userId, "test@test.ru", "Test");
-        when(userService.findUserById(userId)).thenReturn(returnedResult);
+        when(userService.findUserById(anyLong())).thenReturn(returnedResult);
 
-        String result = mockMvc.perform(get("/users/{userId}", userId)
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(returnedResult)))
+        String result = mockMvc.perform(get("/users/{userId}", userId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(returnedResult), result);
+        verify(userService, times(1))
+                .findUserById(anyLong());
     }
 
 
@@ -118,14 +123,13 @@ class UserControllerTest {
         List<UserDto> returnedResult = List.of(userDto1, userDto2);
         when(userService.findAllUsers()).thenReturn(returnedResult);
 
-        String result = mockMvc.perform(get("/users")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(returnedResult)))
+        String result = mockMvc.perform(get("/users"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(returnedResult), result);
+        verify(userService, times(1)).findAllUsers();
     }
 }

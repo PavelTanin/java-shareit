@@ -16,7 +16,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -41,6 +41,7 @@ class ItemControllerTest {
         requestItem.setName("Test");
         requestItem.setDescription("Test");
         requestItem.setAvailable(true);
+        String requestBody = objectMapper.writeValueAsString(requestItem);
         ItemDto responseItem = new ItemDto(1L, "Test", "Test", true);
         when(itemService.createItem(any(), anyLong())).thenReturn(responseItem);
 
@@ -48,13 +49,14 @@ class ItemControllerTest {
         String result = mockMvc.perform(post("/items")
                         .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(responseItem)))
+                        .content(requestBody))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(responseItem), result);
+        verify(itemService, times(1)).createItem(any(), anyLong());
     }
 
     @SneakyThrows
@@ -67,21 +69,22 @@ class ItemControllerTest {
         requestItem.setName("Test");
         requestItem.setDescription("Test");
         requestItem.setAvailable(true);
+        String requestBody = objectMapper.writeValueAsString(requestItem);
         ItemDto responseItem = new ItemDto(1L, "Renamed", "Renamed", true);
-
         when(itemService.updateItem(any(), anyLong(), anyLong())).thenReturn(responseItem);
 
 
         String result = mockMvc.perform(patch("/items/{itemId}", itemId)
                         .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(responseItem)))
+                        .content(requestBody))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(responseItem), result);
+        verify(itemService, times(1)).updateItem(any(), anyLong(), anyLong());
     }
 
     @SneakyThrows
@@ -93,15 +96,14 @@ class ItemControllerTest {
         when(itemService.deleteItem(anyLong(), anyLong())).thenReturn("Предмет удален");
 
         String result = mockMvc.perform(delete("/items/{itemId}", itemId)
-                        .header("X-Sharer-User-Id", userId)
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(expectedResult)))
+                        .header("X-Sharer-User-Id", userId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(expectedResult, result);
+        verify(itemService, times(1)).deleteItem(anyLong(), anyLong());
 
     }
 
@@ -112,19 +114,21 @@ class ItemControllerTest {
         Long itemId = 1L;
         CommentDto requestDto = new CommentDto();
         requestDto.setText("Test");
+        String requestBody = objectMapper.writeValueAsString(requestDto);
         CommentDto responseDto = new CommentDto(1L, "Test", "TestUser", LocalDateTime.now());
         when(itemService.addComment(any(), anyLong(), anyLong())).thenReturn(responseDto);
 
         String result = mockMvc.perform(post("/items/{itemId}/comment", itemId)
                         .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(responseDto)))
+                        .content(requestBody))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(responseDto), result);
+        verify(itemService, times(1)).addComment(any(), anyLong(), anyLong());
 
     }
 
@@ -136,18 +140,21 @@ class ItemControllerTest {
         Long commentId = 1L;
         LocalDateTime created = LocalDateTime.now();
         CommentDto responseDto = new CommentDto(1L, "Renamed", "TestUser", created);
+        String requestBody = objectMapper.writeValueAsString(responseDto);
         when(itemService.updateComment(any(), anyLong(), anyLong(), anyLong())).thenReturn(responseDto);
 
         String result = mockMvc.perform(patch("/items/{itemId}/comment/{commentId}", itemId, commentId)
                         .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(responseDto)))
+                        .content(requestBody))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(responseDto), result);
+        verify(itemService, times(1))
+                .updateComment(any(), anyLong(), anyLong(), anyLong());
 
     }
 
@@ -161,15 +168,14 @@ class ItemControllerTest {
         when(itemService.deleteComment(anyLong(), anyLong(), anyLong())).thenReturn(expectedResult);
 
         String result = mockMvc.perform(delete("/items/{itemId}/comment/{commentId}", itemId, commentId)
-                        .header("X-Sharer-User-Id", userId)
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(expectedResult)))
+                        .header("X-Sharer-User-Id", userId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(expectedResult, result);
+        verify(itemService, times(1)).deleteComment(anyLong(), anyLong(), anyLong());
     }
 
     @SneakyThrows
@@ -182,38 +188,36 @@ class ItemControllerTest {
 
 
         String result = mockMvc.perform(get("/items/{itemId}", itemId)
-                        .header("X-Sharer-User-Id", userId)
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(expectedResult)))
+                        .header("X-Sharer-User-Id", userId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(expectedResult), result);
+        verify(itemService, times(1))
+                .findItemById(anyLong(), anyLong());
     }
 
     @SneakyThrows
     @Test
     void findUserAllItems() {
         Long userId = 1L;
-        Integer from = 0;
-        Integer size = 10;
         ItemDto responseItem1 = new ItemDto(userId, "Test", "Test", true);
         ItemDto responseItem2 = new ItemDto(userId, "Test2", "Test2", false);
         List<ItemDto> expectedResult = List.of(responseItem1, responseItem2);
         when(itemService.findUserAllItems(anyLong(), anyInt(), anyInt())).thenReturn(expectedResult);
 
         String result = mockMvc.perform(get("/items")
-                        .header("X-Sharer-User-Id", userId)
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(expectedResult)))
+                        .header("X-Sharer-User-Id", userId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(expectedResult), result);
+        verify(itemService, times(1))
+                .findUserAllItems(anyLong(), anyInt(), anyInt());
     }
 
     @SneakyThrows
@@ -226,14 +230,14 @@ class ItemControllerTest {
         when(itemService.searchItemByNameAndDescription(any(), anyInt(), anyInt())).thenReturn(List.of(responseDto1, responseDto2));
 
         String result = mockMvc.perform(get("/items/search?text=")
-                        .header("X-Sharer-User-Id", userId)
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(expectedResult)))
+                        .header("X-Sharer-User-Id", userId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(expectedResult), result);
+        verify(itemService, times(1))
+                .searchItemByNameAndDescription(anyString(), anyInt(), anyInt());
     }
 }

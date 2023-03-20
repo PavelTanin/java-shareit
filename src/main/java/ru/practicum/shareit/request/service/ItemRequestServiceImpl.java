@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.ObjectNotFoundException;
 import ru.practicum.shareit.exception.OwnerIdAndUserIdException;
 import ru.practicum.shareit.exception.UserNotAuthorizedException;
+import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -47,8 +49,8 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         isUserAuthorizated(userId);
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
-                log.info("Пользователь не зарегестрирован");
-                throw new ObjectNotFoundException("Пользователь не зарегестрирован");
+            log.info("Пользователь не зарегестрирован");
+            throw new ObjectNotFoundException("Пользователь не зарегестрирован");
         }
         ItemRequest itemRequest = RequestMapper.toItemRequest(itemRequestDto);
         itemRequest.setCreated(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
@@ -102,10 +104,11 @@ public class ItemRequestServiceImpl implements ItemRequestService {
             log.info("Запроса с id: {} не существует", requestId);
             throw new ObjectNotFoundException("Запрос не найден");
         }
-        List<ItemRequest> result = List.of(itemRequest);
-        getItemsForRequests(result);
+        List<ItemRequest> requestInList = List.of(itemRequest);
+        List<ItemRequestDto> result = requestInList.stream().map(RequestMapper::toItemRequestDto).collect(toList());
+        getItemsForRequests(requestInList, result);
         log.info("Получена информация о запросе id: {}", requestId);
-        return result.stream().map(RequestMapper::toItemRequestDto).findAny().get();
+        return result.get(0);
     }
 
     public List<ItemRequestDto> findAllUserRequests(Long userId) {
@@ -116,11 +119,11 @@ public class ItemRequestServiceImpl implements ItemRequestService {
             log.info("Пользователь не зарегестрирован");
             throw new ObjectNotFoundException("Пользователь не зарегестрирован");
         }
-        List<ItemRequest> requests = itemRequestRepository
-                .findAllByRequestorOrderByIdAsc(user);
-        getItemsForRequests(requests);
+        List<ItemRequest> requests = itemRequestRepository.findAllByRequestorOrderByIdAsc(user);
+        List<ItemRequestDto> result = requests.stream().map(RequestMapper::toItemRequestDto).collect(toList());
+        getItemsForRequests(requests, result);
         log.info("Пользователь id: {} получил информацию о своих запросах", userId);
-        return requests.stream().map(RequestMapper::toItemRequestDto).collect(toList());
+        return result;
     }
 
     public List<ItemRequestDto> findAllRequests(Long userId, Integer from, Integer size) {
@@ -135,19 +138,26 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         Pageable pageRequest = PageRequest.of(from, size);
         List<ItemRequest> requests = itemRequestRepository
                 .findAllByRequestorIsNotOrderByIdAsc(user, pageRequest).getContent();
-        getItemsForRequests(requests);
+        List<ItemRequestDto> result = requests.stream().map(RequestMapper::toItemRequestDto).collect(toList());
+        getItemsForRequests(requests, result);
         log.info("Получен список всех запросов");
-        return requests.stream().map(RequestMapper::toItemRequestDto).collect(toList());
+        return result;
     }
 
-    private void getItemsForRequests(List<ItemRequest> requests) {
+    private void getItemsForRequests(List<ItemRequest> requests, List<ItemRequestDto> result) {
         if (!requests.isEmpty()) {
             Map<ItemRequest, List<Item>> itemsByRequests = itemRepository
                     .findAllByRequestInOrderByIdAsc(requests)
                     .stream()
                     .collect(groupingBy(Item::getRequest, toList()));
-            for (ItemRequest request : requests) {
-                request.setItems(itemsByRequests.get(request));
+            for (int i = 0; i < requests.size(); i++) {
+                if (!itemsByRequests.containsKey(requests.get(i))) {
+                    result.get(i).setItems(Collections.emptyList());
+                } else {
+                    result.get(i).setItems(itemsByRequests.get(requests.get(i)).stream()
+                            .map(ItemMapper::toItemForRequestDto)
+                            .collect(toList()));
+                }
             }
         }
     }

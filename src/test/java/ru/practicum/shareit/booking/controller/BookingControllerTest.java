@@ -19,7 +19,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -40,9 +40,10 @@ class BookingControllerTest {
     void createBooking() {
         Long userId = 1L;
         BookingIncomeInfo requestBooking = new BookingIncomeInfo();
-        requestBooking.setItemId(1L);
         requestBooking.setStart(LocalDateTime.of(2023, 12, 10, 17, 45));
         requestBooking.setEnd(LocalDateTime.of(2023, 12, 20, 17, 45));
+        requestBooking.setItemId(1L);
+        String requestBody = objectMapper.writeValueAsString(requestBooking);
         BookingDto responseBooking = new BookingDto(1L, requestBooking.getStart(),
                 requestBooking.getEnd(), Status.WAITING, new UserIdDto(), new ItemForBookingDto());
         when(bookingService.createBooking(any(), anyLong())).thenReturn(responseBooking);
@@ -51,13 +52,14 @@ class BookingControllerTest {
         String result = mockMvc.perform(post("/bookings")
                         .header("X-Sharer-User-Id", userId)
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(responseBooking)))
+                        .content(requestBody))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(responseBooking), result);
+        verify(bookingService, times(1)).createBooking(any(), anyLong());
 
     }
 
@@ -71,15 +73,14 @@ class BookingControllerTest {
         when(bookingService.changeBookingStatus(anyLong(), anyString(), anyLong())).thenReturn(responseBooking);
 
         String result = mockMvc.perform(patch("/bookings/{bookingId}?approved=", bookingId)
-                        .header("X-Sharer-User-Id", userId)
-                        .content("application/json")
-                        .content(objectMapper.writeValueAsString(responseBooking)))
+                        .header("X-Sharer-User-Id", userId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(responseBooking), result);
+        verify(bookingService, times(1)).changeBookingStatus(anyLong(), anyString(), anyLong());
     }
 
     @SneakyThrows
@@ -91,15 +92,14 @@ class BookingControllerTest {
         when(bookingService.deleteBooking(anyLong(), anyLong())).thenReturn(expectedResult);
 
         String result = mockMvc.perform(delete("/bookings/{bookingId}", bookingId)
-                        .header("X-Sharer-User-Id", userId)
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(expectedResult)))
+                        .header("X-Sharer-User-Id", userId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(expectedResult, result);
+        verify(bookingService, times(1)).deleteBooking(anyLong(), anyLong());
     }
 
     @SneakyThrows
@@ -118,15 +118,14 @@ class BookingControllerTest {
         when(bookingService.findById(anyLong(), anyLong())).thenReturn(responseBooking);
 
         String result = mockMvc.perform(get("/bookings/{bookingId}", bookingId)
-                        .header("X-Sharer-User-Id", userId)
-                        .content("application/json")
-                        .content(objectMapper.writeValueAsString(responseBooking)))
+                        .header("X-Sharer-User-Id", userId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(responseBooking), result);
+        verify(bookingService, times(1)).findById(anyLong(), anyLong());
     }
 
     @SneakyThrows
@@ -144,15 +143,15 @@ class BookingControllerTest {
         when(bookingService.findUserBookings(anyLong(), any(), anyInt(), anyInt())).thenReturn(expectedResult);
 
         String result = mockMvc.perform(get("/bookings")
-                        .header("X-Sharer-User-Id", userId)
-                        .content("application/json")
-                        .content(objectMapper.writeValueAsString(expectedResult)))
+                        .header("X-Sharer-User-Id", userId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(expectedResult), result);
+        verify(bookingService, times(1))
+                .findUserBookings(anyLong(), any(), anyInt(), anyInt());
 
     }
 
@@ -171,14 +170,14 @@ class BookingControllerTest {
         when(bookingService.findOwnerBookings(anyLong(), any(), anyInt(), anyInt())).thenReturn(expectedResult);
 
         String result = mockMvc.perform(get("/bookings/owner")
-                        .header("X-Sharer-User-Id", userId)
-                        .content("application/json")
-                        .content(objectMapper.writeValueAsString(expectedResult)))
+                        .header("X-Sharer-User-Id", userId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(expectedResult), result);
+        verify(bookingService, times(1))
+                .findOwnerBookings(anyLong(), any(), anyInt(), anyInt());
     }
 }

@@ -4,12 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.*;
-import java.util.List;
 import java.util.Objects;
 
 @Entity
@@ -41,14 +39,6 @@ public class Item {
     @JoinColumn(name = "request_id")
     private ItemRequest request;
 
-    @Transient
-    private List<Comment> comments;
-
-    @Transient
-    private Booking lastBooking;
-
-    @Transient
-    private Booking nextBooking;
 
     public Item(String name, String description, Boolean available) {
         this.name = name;

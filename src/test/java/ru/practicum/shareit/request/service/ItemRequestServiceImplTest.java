@@ -201,10 +201,9 @@ class ItemRequestServiceImplTest {
         itemRequest.setRequestor(userRequestor);
         Item requestedItem1 = new Item(1L, "Test",
                 "Test", true, userOwner,
-                itemRequest, Collections.emptyList(), null, null);
+                itemRequest);
         Item requestedItem2 = new Item(2L, "Test",
-                "Test", true, userOwner, itemRequest,
-                Collections.emptyList(), null, null);
+                "Test", true, userOwner, itemRequest);
         ItemForRequestDto itemDto1 = ItemMapper.toItemForRequestDto(requestedItem1);
         ItemForRequestDto itemDto2 = ItemMapper.toItemForRequestDto(requestedItem2);
         ItemRequestDto expectedResult = RequestMapper.toItemRequestDto(itemRequest);
@@ -248,14 +247,11 @@ class ItemRequestServiceImplTest {
                 LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES));
         itemRequest2.setRequestor(userRequestor);
         Item requestedItem1 = new Item(1L, "Test",
-                "Test", true, userOwner, itemRequest, Collections.emptyList(),
-                null, null);
+                "Test", true, userOwner, itemRequest);
         Item requestedItem2 = new Item(2L, "Test2",
-                "Test2", true, userOwner, itemRequest, Collections.emptyList(),
-                null, null);
+                "Test2", true, userOwner, itemRequest);
         Item requestedItem3 = new Item(3L, "Test2",
-                "Test2", true, userOwner, itemRequest2, Collections.emptyList(),
-                null, null);
+                "Test2", true, userOwner, itemRequest2);
         ItemForRequestDto requestedItemDto1 = ItemMapper.toItemForRequestDto(requestedItem1);
         ItemForRequestDto requestedItemDto2 = ItemMapper.toItemForRequestDto(requestedItem2);
         ItemForRequestDto requestedItemDto3 = ItemMapper.toItemForRequestDto(requestedItem3);
@@ -294,14 +290,11 @@ class ItemRequestServiceImplTest {
                 LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES));
         itemRequest2.setRequestor(userRequestor);
         Item requestedItem1 = new Item(1L, "Test",
-                "Test", true, userOwner, itemRequest, Collections.emptyList(),
-                null, null);
+                "Test", true, userOwner, itemRequest);
         Item requestedItem2 = new Item(2L, "Test",
-                "Test", true, userOwner, itemRequest, Collections.emptyList(),
-                null, null);
+                "Test", true, userOwner, itemRequest);
         Item requestedItem3 = new Item(3L, "Test",
-                "Test", true, userOwner, itemRequest2, Collections.emptyList(),
-                null, null);
+                "Test", true, userOwner, itemRequest2);
         ItemForRequestDto requestedItemDto1 = ItemMapper.toItemForRequestDto(requestedItem1);
         ItemForRequestDto requestedItemDto2 = ItemMapper.toItemForRequestDto(requestedItem2);
         ItemForRequestDto requestedItemDto3 = ItemMapper.toItemForRequestDto(requestedItem3);

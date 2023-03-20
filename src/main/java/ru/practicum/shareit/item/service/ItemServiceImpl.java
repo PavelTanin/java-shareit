@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.booking.mapper.BookingMapper;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.Status;
 import ru.practicum.shareit.booking.repository.BookingRepository;
@@ -192,14 +193,15 @@ public class ItemServiceImpl implements ItemService {
             log.info("Предмет с id:{} не найден", itemId);
             throw new ObjectNotFoundException("Такого предмета нет");
         }
-        List<Item> result = List.of(item);
-        getCommentsForItem(result);
+        List<Item> itemInList = List.of(item);
+        List<ItemDto> result = itemInList.stream().map(ItemMapper::toItemDto).collect(toList());
+        getCommentsForItem(itemInList, result);
         if (item.getOwner().getId().equals(userId)) {
             log.info("Получена информация о прошлом и следующем бронированиях предмета id: {}", itemId);
-            getBookingsForItem(result);
+            getBookingsForItem(itemInList, result);
         }
         log.info("Получена информация о предмете id: {}", itemId);
-        return result.stream().map(ItemMapper::toItemDto).findAny().get();
+        return result.get(0);
     }
 
     @Transactional
@@ -210,39 +212,49 @@ public class ItemServiceImpl implements ItemService {
         customValidator.isPageableParamsCorrect(from, size);
         Pageable pageRequest = PageRequest.of(from, size);
         List<Item> items = itemRepository.findAllByOwner_Id(userId, pageRequest);
-        getCommentsForItem(items);
-        getBookingsForItem(items);
+        List<ItemDto> result = items.stream().map(ItemMapper::toItemDto).collect(toList());
+        getCommentsForItem(items, result);
+        getBookingsForItem(items, result);
         log.info("Получен список предметов, размещенных пользователем {}", userId);
-        return items.stream().map(ItemMapper::toItemDto).collect(toList());
+        return result;
     }
 
-    private void getCommentsForItem(List<Item> items) {
+    private void getCommentsForItem(List<Item> items, List<ItemDto> result) {
         if (!items.isEmpty()) {
-            Map<Item, List<Comment>> commentMap = commentRepository.findAllByItemInOrderByCreatedAsc(items)
+            Map<Item, List<Comment>> commentMap = commentRepository
+                    .findAllByItemInOrderByCreatedAsc(items)
                     .stream()
                     .collect(groupingBy(Comment::getItem, toList()));
-            for (Item item : items) {
-                if (commentMap.containsKey(item)) {
-                    item.setComments(commentMap.get(item));
+            for (int i = 0; i < result.size(); i++) {
+                if (!commentMap.containsKey(items.get(i))) {
+                    result.get(i).setComments(Collections.emptyList());
+                } else {
+                    result.get(i).setComments(commentMap.get(items.get(i)).stream()
+                            .map(CommentMapper::toCommentDto)
+                            .collect(toList()));
                 }
             }
         }
     }
 
-    private void getBookingsForItem(List<Item> items) {
+
+    private void getBookingsForItem(List<Item> items, List<ItemDto> result) {
         if (!items.isEmpty()) {
-            Map<Item, List<Booking>> bookingMap = bookingRepository.findAllByItemInAndStatusIsOrderByIdAsc(items,
+            Map<Item, List<Booking>> bookingMap = bookingRepository
+                    .findAllByItemInAndStatusIsOrderByIdAsc(items,
                             Status.APPROVED).stream()
                     .collect(groupingBy(Booking::getItem, toList()));
-            for (Item item : items) {
-                if (bookingMap.containsKey(item)) {
-                    item.setLastBooking(bookingMap.get(item).stream()
+            for (int i = 0; i < result.size(); i++) {
+                if (bookingMap.containsKey(items.get(i))) {
+                    result.get(i).setLastBooking(bookingMap.get(items.get(i)).stream()
                             .sorted(comparing(Booking::getStart).reversed())
                             .filter(o -> o.getStart().isBefore(LocalDateTime.now()))
+                            .map(BookingMapper::toBookingForItemDto)
                             .findFirst().orElse(null));
-                    item.setNextBooking(bookingMap.get(item).stream()
+                    result.get(i).setNextBooking(bookingMap.get(items.get(i)).stream()
                             .sorted(comparing(Booking::getStart))
                             .filter(o -> o.getStart().isAfter(LocalDateTime.now()))
+                            .map(BookingMapper::toBookingForItemDto)
                             .findFirst().orElse(null));
                 }
             }
