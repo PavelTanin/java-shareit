@@ -1,8 +1,6 @@
 package ru.practicum.shareit.exception;
 
-import java.io.IOException;
-
-public class IncorrectBookingTimeException extends IOException {
+public class IncorrectBookingTimeException extends RuntimeException {
 
     public IncorrectBookingTimeException(String message) {
         super(message);

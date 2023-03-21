@@ -1,8 +1,6 @@
 package ru.practicum.shareit.exception;
 
-import java.io.IOException;
-
-public class EmptyAvailablePoint extends IOException {
+public class EmptyAvailablePoint extends RuntimeException {
 
     public EmptyAvailablePoint(String message) {
         super(message);

@@ -1,8 +1,6 @@
 package ru.practicum.shareit.exception;
 
-import java.io.IOException;
-
-public class UserEmptyNameException extends IOException {
+public class UserEmptyNameException extends RuntimeException {
 
     public UserEmptyNameException(String message) {
         super(message);

@@ -1,8 +1,6 @@
 package ru.practicum.shareit.exception;
 
-import java.io.IOException;
-
-public class OwnerIdAndUserIdException extends IOException {
+public class OwnerIdAndUserIdException extends RuntimeException {
 
     public OwnerIdAndUserIdException(String message) {
         super(message);

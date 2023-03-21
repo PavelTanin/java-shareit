@@ -1,8 +1,6 @@
 package ru.practicum.shareit.exception;
 
-import java.io.IOException;
-
-public class UserNotAuthorizedException extends IOException {
+public class UserNotAuthorizedException extends RuntimeException {
 
     public UserNotAuthorizedException(String message) {
         super(message);

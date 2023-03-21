@@ -1,8 +1,6 @@
 package ru.practicum.shareit.exception;
 
-import java.io.IOException;
-
-public class ItemWrongNameException extends IOException {
+public class ItemWrongNameException extends RuntimeException {
 
     public ItemWrongNameException(String message) {
         super(message);
