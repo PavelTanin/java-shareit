@@ -7,10 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.booking.dto.BookingIncomeInfo;
 import ru.practicum.shareit.booking.model.BookingState;
-import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.service.BookingService;
-
-import java.util.List;
 
 @Slf4j
 @RestController
