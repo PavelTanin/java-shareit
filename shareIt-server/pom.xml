@@ -64,10 +64,6 @@
 			<version>6.2.5.Final</version>
 			<scope>compile</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-		</dependency>
 
 		<dependency>
 			<groupId>org.slf4j</groupId>
