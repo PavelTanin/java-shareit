@@ -1,4 +1,4 @@
 FROM amazoncorretto:11-alpine
-VOLUME /tmp
+VOLUME /creatingData
 COPY target/*.jar app.jar
-ENTRYPOINT ["java","${JAVA_OPTS}","-jar","/app.jar"]
+ENTRYPOINT ["java ${JAVA_OPTS} -jar /app.jar"]
