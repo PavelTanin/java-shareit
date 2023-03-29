@@ -41,10 +41,6 @@ public class BookingClient extends BaseClient {
         if (!(approved.equals("true") || approved.equals("false"))) {
             throw new IncorrectRequestParamsException("Некорректно указан статус бронирования");
         }
-        Map<String, Object> parameters = Map.of(
-                "bookingId", bookingId,
-                "approved", approved
-        );
         return patch("/" + + bookingId + "?approved=" + approved, userId);
     }
 
